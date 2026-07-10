@@ -51,14 +51,16 @@ sequenceDiagram
 *   **Tipo:** Custom Skill (`.agents/skills/implement-issue`)
 *   **Descrição:** Ao iniciar o desenvolvimento, o agente lê a issue criada, analisa a base de código atual e elabora um **Software Design Document (SDD)**.
     *   Mapeia arquivos que serão criados (`[NEW]`), modificados (`[MODIFY]`) ou removidos (`[DELETE]`).
-    *   Gera um arquivo de checklist de tarefas local (`task.md`) para guiar a codificação passo a passo.
+    *   Gera um arquivo de checklist de tarefas local (`temp_task.md`) na raiz do workspace para guiar a codificação passo a passo.
+    *   **Nota de Ciclo de Vida**: O arquivo `temp_task.md` é adicionado ao `.gitignore` do repositório, servindo como uma ferramenta de controle estritamente local/temporária durante a sessão ativa, sem risco de ser enviada ao repositório remoto.
 *   **Resultado:** Um plano arquitetural revisado antes do início da escrita do código.
 
 ### 3. Agente de Implementação & Commit
 *   **Tipo:** Workspace Agent (Utilizando as regras locais do repositório)
-*   **Descrição:** Executa a codificação iterativamente a partir do `task.md`. Ao finalizar:
+*   **Descrição:** Executa a codificação iterativamente a partir do `temp_task.md`. Ao finalizar:
     *   Executa os testes locais (`ng test` ou `vitest`).
     *   Se os testes passarem, realiza o commit e push automáticos, amarrando a mensagem de commit ao ID da issue original (ex: `feat: auth module integration #42`).
+    *   Deleta o arquivo `/temp_task.md` local como etapa de limpeza final da tarefa (clean-up).
 *   **Resultado:** Pull Request aberta com código testado e referenciado.
 
 ### 4. Revisor Automático de PR (Antigravity SDK & GitHub Actions)
