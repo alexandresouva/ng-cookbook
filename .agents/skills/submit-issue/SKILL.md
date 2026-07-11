@@ -33,11 +33,11 @@ This skill instructs the agent on how to automatically commit, push, and open a 
     ```bash
     git add .
     ```
-3.  Commit the changes using a conventional commit message containing the prefix, a brief description, and the issue number reference:
+3.  Commit the changes using a conventional commit message with the prefix, the issue number as the **scope**, and a brief description:
     ```bash
-    git commit -m "<prefix>: [short description] #<ISSUE_ID>"
+    git commit -m "<prefix>(#<ISSUE_ID>): [short description]"
     ```
-    *Example*: `chore: setup linting and formatting rules #1`
+    *Example*: `chore(#1): setup linting and formatting rules`
 
 ### Step 4: Visual Evidence Gathering (For UI/Visual Tasks Only)
 1.  **Analyze Visual Impact**: Detect if the changes modify visual/UI aspects (e.g., changes to CSS/SCSS, HTML templates, UI components, Storybook stories).
