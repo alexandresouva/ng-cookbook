@@ -1,8 +1,9 @@
 import os
+import sys
 import json
 import subprocess
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
 import google.antigravity as agy
 
 # 1. Define the Pydantic Schema for Structured Review
@@ -92,13 +93,24 @@ async def run_review():
     config = agy.LocalAgentConfig(
         system_instruction=system_instruction,
         response_schema=PRReview,
-        model="gemini-2.5-pro" # Standard high-tier reasoning model for code auditing
+        model="gemini-2.0-flash" # flash model has higher free-tier quota limits
     )
 
     print("Sending diff and guidelines to Gemini for analysis...")
-    async with agy.Agent(config) as agent:
-        response = await agent.chat(prompt)
-        review_result = await response.structured_output()
+    try:
+        async with agy.Agent(config) as agent:
+            response = await agent.chat(prompt)
+            review_result = await response.structured_output()
+    except Exception as e:
+        error_str = str(e)
+        if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str or "quota" in error_str.lower():
+            print(
+                "⚠️  WARNING: Gemini API quota exceeded. Skipping automated review for this run.\n"
+                "   Consider upgrading your Google AI Studio plan or waiting for quota reset.\n"
+                f"   Details: {error_str[:300]}"
+            )
+            sys.exit(0)  # Exit cleanly — do not fail the CI pipeline
+        raise  # Re-raise unexpected errors
 
     if not review_result:
         print("Error: Failed to obtain structured output from the agent.")
