@@ -34,10 +34,34 @@ If there are no violations, return an empty array for "comments" and set "approv
 # 2. Call GitHub Models API
 # ---------------------------------------------------------------------------
 
+def compress_diff(diff: str, max_lines: int = 800) -> str:
+    """
+    Strip unchanged context lines from the diff to reduce token usage.
+    Keeps: file headers (---/+++/diff/index/@@) and changed lines (+/-).
+    Truncates to max_lines if still too large.
+    """
+    kept = []
+    for line in diff.splitlines():
+        if (
+            line.startswith(("diff ", "index ", "--- ", "+++ ", "@@", "+", "-"))
+            and not line.startswith(("--- a/", "+++ b/"))  # keep these
+            or line.startswith(("diff ", "index ", "--- ", "+++ ", "@@"))
+        ):
+            kept.append(line)
+        elif line.startswith("+") or line.startswith("-"):
+            kept.append(line)
+
+    if len(kept) > max_lines:
+        kept = kept[:max_lines]
+        kept.append(f"\n... [diff truncated at {max_lines} lines to fit token limit] ...")
+
+    return "\n".join(kept)
+
+
 def call_github_models(system_instruction: str, prompt: str, token: str) -> dict:
     url = "https://models.inference.ai.azure.com/chat/completions"
     payload = json.dumps({
-        "model": "gpt-4o-mini",
+        "model": "gpt-4o",
         "response_format": {"type": "json_object"},
         "messages": [
             {"role": "system", "content": system_instruction},
@@ -143,8 +167,21 @@ def run_review():
         f"{pr_diff}\n"
     )
 
+    # --- Compress diff to reduce token usage ---
+    compressed_diff = compress_diff(pr_diff)
+    original_lines  = len(pr_diff.splitlines())
+    compressed_lines = len(compressed_diff.splitlines())
+    print(f"📊 Diff compressed: {original_lines} → {compressed_lines} lines (removed unchanged context)")
+
+    prompt = (
+        f"Review the following Pull Request diff against the project guidelines.\n\n"
+        f"{guidelines}\n\n"
+        f"=== PR DIFF (changed lines only) ===\n"
+        f"{compressed_diff}\n"
+    )
+
     # --- Call GitHub Models ---
-    print("📡 Sending diff to GitHub Models (gpt-4o-mini) for analysis...")
+    print("📡 Sending diff to GitHub Models (gpt-4o) for analysis...")
     review_result = call_github_models(system_instruction, prompt, github_token)
 
     if not review_result:
