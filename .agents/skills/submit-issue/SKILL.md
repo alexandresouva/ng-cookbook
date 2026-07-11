@@ -12,24 +12,27 @@ This skill instructs the agent on how to automatically commit, push, and open a 
 ## 🛠️ Step-by-Step Submitter Flow
 
 ### Step 1: Pre-Commit Checks
+
 1.  Verify the workspace has no active local checklist files (`temp_task.md` or similar temp checklist files must have been deleted or cleaned up).
 
 ### Step 2: Semantic Type Detection
+
 1.  Retrieve the issue details from GitHub using the CLI:
     ```bash
     gh issue view <ISSUE_ID> --json title,body,labels
     ```
 2.  **Semantic Inference**: Read and analyze the entire JSON output (title, body description, and tags) using natural language understanding:
-    *   Determine the most appropriate **Conventional Commits prefix** for the work done (e.g. `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `ci`, `perf`, `style`).
-    *   Extract a very short, kebab-cased semantic description of what is being done (e.g., `setup-linting-formatting`, `user-authentication`, `fix-memory-leak`).
-    *   *Examples*: Setup tasks and configs map to `chore` or `ci`; new screens map to `feat`; bugfixes map to `fix`.
+    - Determine the most appropriate **Conventional Commits prefix** for the work done (e.g. `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `ci`, `perf`, `style`).
+    - Extract a very short, kebab-cased semantic description of what is being done (e.g., `setup-linting-formatting`, `user-authentication`, `fix-memory-leak`).
+    - _Examples_: Setup tasks and configs map to `chore` or `ci`; new screens map to `feat`; bugfixes map to `fix`.
 
 ### Step 3: Branching & Committing
+
 1.  Create and checkout a new local branch using the dynamic prefix and the kebab-case short description:
     ```bash
     git checkout -b <prefix>/<kebab-case-short-description>
     ```
-2.  Stage the modified and created files (specifically ensuring the permanent Software Design Document `.agents/sdd/sdd-issue-<ISSUE_ID>.md` is included in the staging area):
+2.  Stage the modified and created files:
     ```bash
     git add .
     ```
@@ -37,44 +40,55 @@ This skill instructs the agent on how to automatically commit, push, and open a 
     ```bash
     git commit -m "<prefix>(#<ISSUE_ID>): [short description]"
     ```
-    *Example*: `chore(#1): setup linting and formatting rules`
+    _Example_: `chore(#1): setup linting and formatting rules`
 
 ### Step 4: Visual Evidence Gathering (For UI/Visual Tasks Only)
+
 1.  **Analyze Visual Impact**: Detect if the changes modify visual/UI aspects (e.g., changes to CSS/SCSS, HTML templates, UI components, Storybook stories).
 2.  **Spin-up Dev Server**: If the changes are visual:
-    *   Start the local dev server (e.g. `npm run start` or `npm run dev`) or Storybook (`npm run storybook`) in the background.
+    - Start the local dev server (e.g. `npm run start` or `npm run dev`) or Storybook (`npm run storybook`) in the background.
 3.  **Capture Screenshot via Browser Subagent**:
-    *   Launch the `browser_subagent` to navigate to the local application port (e.g., `http://localhost:4200` or `http://localhost:6006`).
-    *   Interact as necessary and capture a high-resolution screenshot of the component/page.
-    *   Stop the background dev server.
-    *   Save the screenshot locally in the repository at `.agents/evidence/issue-<ISSUE_ID>-evidence.png`.
+    - Launch the `browser_subagent` to navigate to the local application port (e.g., `http://localhost:4200` or `http://localhost:6006`).
+    - Interact as necessary and capture a high-resolution screenshot of the component/page.
+    - Stop the background dev server.
+    - Save the screenshot locally in the repository at `.agents/evidence/issue-<ISSUE_ID>-evidence.png`.
 4.  **Non-visual Fallback**: If the changes are purely logical (e.g., configs, backend scripts, logic code), skip this capture step and write `N/A (Non-visual task)` in the evidence section.
 
 ### Step 5: Pushing & Pull Request Creation
+
 1.  **Pushing Branch**: Push the branch to the remote origin.
-    *   *Note*: If SSH authentication is denied (`Permission denied (publickey)`), use the active GitHub CLI token to push via HTTPS:
-        ```bash
-        git push https://x-access-token:$(gh auth token)@github.com/alexandresouva/ng-cookbook.git <branch_name>
-        ```
-2.  **Generate Structured PR Body**: Write a professional markdown Pull Request description to a temporary file in the workspace root.
-    *   **CRITICAL**: You MUST name this file exactly `temp_pr_body.md`. This specific filename is in the `.gitignore` allow list. Do NOT use names like `pr-body.md`.
-    *   **Content**:
-        ```markdown
-        ## 📝 Description
-        - [Bullet points summarizing the changes implemented]
+    - _Note_: If SSH authentication is denied (`Permission denied (publickey)`), use the active GitHub CLI token to push via HTTPS:
+      ```bash
+      git push https://x-access-token:$(gh auth token)@github.com/alexandresouva/ng-cookbook.git <branch_name>
+      ```
+2.  **Generate Structured PR Body**:
+    - Read the temporary Software Design Document file: `.agents/sdd/sdd-issue-<ISSUE_ID>.md`.
+    - Parse and extract the **Objective & Scope** and **Proposed Changes** sections from the SDD.
+    - Draft a professional markdown Pull Request description using those details:
+      ```markdown
+      ## 📝 Description
 
-        ## 🧪 Verification & Tests
-        - [Describe verification commands executed (e.g. npm run lint) and results]
+      - [Summary of changes derived from the SDD's Objective & Scope and Proposed Changes]
 
-        ## 📸 Visual Evidence
-        [Embed screenshot if captured, i.e., `![Visual Evidence](.agents/evidence/issue-<ISSUE_ID>-evidence.png)`, or state `N/A (Non-visual task)`]
+      ## 🧪 Verification & Tests
 
-        ---
-        Closes #<ISSUE_ID>
-        ```
-3.  **Create PR**: Create the Pull Request on GitHub using the explicit branch head flag and the body file to prevent upstream errors:
+      - [Describe verification commands executed (e.g. npm run lint) and results]
+
+      ## 📸 Visual Evidence
+
+      [Embed screenshot if captured, i.e., `![Visual Evidence](.agents/evidence/issue-<ISSUE_ID>-evidence.png)`, or state `N/A (Non-visual task)`]
+
+      ---
+
+      Closes #<ISSUE_ID>
+      ```
+3.  **Create PR**: Create the Pull Request on GitHub using the explicit branch head flag to prevent upstream errors:
     ```bash
-    gh pr create --head <branch_name> --title "<prefix>: [Issue Title]" --body-file temp_pr_body.md
+    gh pr create --head <branch_name> --title "<prefix>(#<ISSUE_ID>): [Issue Title]" --body "STRUCTURED_BODY_TEXT"
     ```
-    *(Note: Remember to delete `temp_pr_body.md` after the Pull Request is successfully created).*
-4.  Output the URL of the created Pull Request to the developer.
+4.  **Final Cleanup**:
+    - Delete the local temporary SDD file:
+      ```bash
+      rm .agents/sdd/sdd-issue-<ISSUE_ID>.md
+      ```
+5.  Output the URL of the created Pull Request to the developer.
