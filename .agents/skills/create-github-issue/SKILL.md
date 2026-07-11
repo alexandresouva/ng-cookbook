@@ -9,10 +9,13 @@ This skill instructs the agent on how to generate and post structured issues to 
 
 ## 📋 Template Conventions
 
-Whenever this skill is triggered, create the issue using one of the two formats below:
+> [!IMPORTANT]
+> **Strict Rules for Issue Creation**:
+> - **Language**: All generated issue titles and bodies must be written in **English**.
+> - **No Phase/Sequential Prefixes**: Do not include prefixes such as `"Phase X:"`, `"Fase X:"`, or sequential numeric counters in the issue title. The title must focus strictly on the functional, business, or technical scope of the task (e.g., `"Linting & Formatting (ESLint + Prettier + EditorConfig)"` or `"User Authentication"`).
 
 ### Format A: Technical Card (Default for Refactorings, Infra, and Quality)
-*   **Title:** `Phase [X]: [Feature/Task Name]`
+*   **Title:** `[Feature/Task Name]` (e.g. `Linting & Formatting (ESLint + Prettier + EditorConfig)`)
 *   **Issue Body:**
     ```markdown
     ## 📝 Context
@@ -28,7 +31,7 @@ Whenever this skill is triggered, create the issue using one of the two formats 
     ```
 
 ### Format B: BDD Card / User Story (For User-Facing Features)
-*   **Title:** `Phase [X]: [Feature Name]`
+*   **Title:** `[Feature Name]` (e.g. `User Authentication`)
 *   **Issue Body:**
     ```markdown
     ## 👤 User Story

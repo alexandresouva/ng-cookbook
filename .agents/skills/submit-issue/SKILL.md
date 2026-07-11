@@ -39,13 +39,39 @@ This skill instructs the agent on how to automatically commit, push, and open a 
     ```
     *Example*: `chore: setup linting and formatting rules #1`
 
-### Step 4: Pushing & Pull Request Creation
-1.  Push the newly created branch to the remote origin:
-    ```bash
-    git push -u origin <prefix>/issue-<ISSUE_ID>
+### Step 4: Visual Evidence Gathering (For UI/Visual Tasks Only)
+1.  **Analyze Visual Impact**: Detect if the changes modify visual/UI aspects (e.g., changes to CSS/SCSS, HTML templates, UI components, Storybook stories).
+2.  **Spin-up Dev Server**: If the changes are visual:
+    *   Start the local dev server (e.g. `npm run start` or `npm run dev`) or Storybook (`npm run storybook`) in the background.
+3.  **Capture Screenshot via Browser Subagent**:
+    *   Launch the `browser_subagent` to navigate to the local application port (e.g., `http://localhost:4200` or `http://localhost:6006`).
+    *   Interact as necessary and capture a high-resolution screenshot of the component/page.
+    *   Stop the background dev server.
+    *   Save the screenshot locally in the repository at `.agents/evidence/issue-<ISSUE_ID>-evidence.png`.
+4.  **Non-visual Fallback**: If the changes are purely logical (e.g., configs, backend scripts, logic code), skip this capture step and write `N/A (Non-visual task)` in the evidence section.
+
+### Step 5: Pushing & Pull Request Creation
+1.  **Pushing Branch**: Push the branch to the remote origin.
+    *   *Note*: If SSH authentication is denied (`Permission denied (publickey)`), use the active GitHub CLI token to push via HTTPS:
+        ```bash
+        git push https://x-access-token:$(gh auth token)@github.com/alexandresouva/ng-cookbook.git <branch_name>
+        ```
+2.  **Generate Structured PR Body**: Draft a professional markdown Pull Request description containing:
+    ```markdown
+    ## 📝 Description
+    - [Bullet points summarizing the changes implemented]
+
+    ## 🧪 Verification & Tests
+    - [Describe verification commands executed (e.g. npm run lint) and results]
+
+    ## 📸 Visual Evidence
+    [Embed screenshot if captured, i.e., `![Visual Evidence](.agents/evidence/issue-<ISSUE_ID>-evidence.png)`, or state `N/A (Non-visual task)`]
+
+    ---
+    Closes #<ISSUE_ID>
     ```
-2.  Create a Pull Request using the GitHub CLI linking to the original issue:
+3.  **Create PR**: Create the Pull Request on GitHub using the explicit branch head flag to prevent upstream errors:
     ```bash
-    gh pr create --title "<prefix>: [Issue Title]" --body "Closes #<ISSUE_ID>"
+    gh pr create --head <branch_name> --title "<prefix>: [Issue Title]" --body "STRUCTURED_BODY_TEXT"
     ```
-3.  Capture the output URL of the Pull Request and present it to the developer.
+4.  Output the URL of the created Pull Request to the developer.
