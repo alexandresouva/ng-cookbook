@@ -3,7 +3,6 @@ name: Automated PR Reviewer
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    # Only trigger when source files or config files are changed (excluding lock files)
     paths:
       - 'src/**'
       - '*.json'
@@ -21,20 +20,15 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetch all history so git diff target branch comparison works
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
-        run: |
-          pip install pydantic google-antigravity
-
       - name: Run PR Reviewer Bot
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python scripts/pr_reviewer.py
