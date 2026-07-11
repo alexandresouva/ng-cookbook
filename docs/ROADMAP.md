@@ -43,7 +43,7 @@ graph TD
 ```
 
 > [!NOTE]
-> **Fluxo de Trabalho de IA Unificado**: Todas as branches adotam o fluxo de desenvolvimento assistido por agentes criado na Fase 2 (criação de issues, geração de SDD, commits referenciados e revisão de PR automatizada via Antigravity SDK). Veja mais detalhes em [docs/agentic-sdlc.md](file:///Users/alexandre/Desktop/playground/ng-cookbook/docs/agentic-sdlc.md).
+> **Fluxo de Trabalho de IA Unificado**: Todas as branches adotam o fluxo de desenvolvimento assistido por agentes criado na Fase 2 (criação de issues, geração de SDD, implementação guiada e submissão estruturada de PRs com revisão humana obrigatória antes do merge). Veja mais detalhes em [docs/agentic-sdlc.md](file:///Users/alexandre/Desktop/playground/ng-cookbook/docs/agentic-sdlc.md).
 
 ---
 
@@ -65,9 +65,9 @@ _Status: Pendente de início._
 ---
 
 ### 🤖 Fase 2: IA, Agents & Automação de SDLC (Branch `main`)
-- [ ] **Integração de Agentes e IA**: Definição e automação do ciclo de desenvolvimento assistido por agentes (Issue Creator, SDD Generator, PR Reviewer).
+- [x] **Integração de Agentes e IA**: Definição e automação do ciclo de desenvolvimento assistido por agentes (Issue Creator, SDD Generator, Code Builder e PR Submitter com revisão humana).
 
-_Status: Planejado. Detalhamento completo do fluxo disponível em [docs/agentic-sdlc.md](file:///Users/alexandre/Desktop/playground/ng-cookbook/docs/agentic-sdlc.md)._
+_Status: Concluído. Detalhamento completo do fluxo disponível em [docs/agentic-sdlc.md](file:///Users/alexandre/Desktop/playground/ng-cookbook/docs/agentic-sdlc.md)._
 
 ---
 
