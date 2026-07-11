@@ -16,22 +16,22 @@ sequenceDiagram
     participant AgentIC as Agent: Issue Creator
     participant GH as GitHub Issues
     participant AgentImpl as Agent: Code Builder
-    participant AgentPR as Agent: PR Reviewer (Action)
-    
+    participant AgentSub as Agent: Submitter
+
     Dev->>AgentIC: Dicta ideia em texto livre
     Note over AgentIC: Gera descrição detalhada (BDD / Jira Card)
     AgentIC->>GH: gh issue create (Cria Issue #ID)
-    
+
     GH->>AgentImpl: Disparado pela Issue #ID
     Note over AgentImpl: Lê a Issue e gera SDD (Design Plan)
-    Note over AgentImpl: Implementa o código & roda testes locais
-    AgentImpl->>GH: git push (Abre PR referenciando #ID)
-    
-    GH->>AgentPR: GitHub Actions (Trigger PR)
-    Note over AgentPR: Lê regras de arquitetura (.agents/rules)
-    Note over AgentPR: Analisa diff & posta comentários inline
-    AgentPR->>GH: gh pr review (Aprova / Solicita Ajustes)
-    
+    Note over AgentImpl: Implementa o código & roda verificações locais
+    AgentImpl-->>Dev: Exibe resultado para revisão manual
+
+    Dev->>AgentSub: Aprovação: "submit-issue <ID>"
+    Note over AgentSub: Infere prefixo semântico da issue
+    Note over AgentSub: Cria branch descritiva & commit semântico
+    AgentSub->>GH: git push + gh pr create (Abre PR referenciando #ID)
+
     Dev->>GH: Validação final & Merge manual
 ```
 
@@ -51,24 +51,29 @@ sequenceDiagram
 *   **Tipo:** Custom Skill (`.agents/skills/implement-issue`)
 *   **Descrição:** Ao iniciar o desenvolvimento, o agente lê a issue criada, analisa a base de código atual e elabora um **Software Design Document (SDD)**.
     *   Mapeia arquivos que serão criados (`[NEW]`), modificados (`[MODIFY]`) ou removidos (`[DELETE]`).
-    *   Gera um arquivo de checklist de tarefas local (`task.md`) para guiar a codificação passo a passo.
+    *   Gera um arquivo de checklist de tarefas local (`temp_task.md`) na raiz do workspace para guiar a codificação passo a passo.
+    *   **Nota de Ciclo de Vida**: O arquivo `temp_task.md` é adicionado ao `.gitignore` do repositório, servindo como uma ferramenta de controle estritamente local/temporária durante a sessão ativa, sem risco de ser enviada ao repositório remoto.
 *   **Resultado:** Um plano arquitetural revisado antes do início da escrita do código.
 
 ### 3. Agente de Implementação & Commit
 *   **Tipo:** Workspace Agent (Utilizando as regras locais do repositório)
-*   **Descrição:** Executa a codificação iterativamente a partir do `task.md`. Ao finalizar:
-    *   Executa os testes locais (`ng test` ou `vitest`).
-    *   Se os testes passarem, realiza o commit e push automáticos, amarrando a mensagem de commit ao ID da issue original (ex: `feat: auth module integration #42`).
-*   **Resultado:** Pull Request aberta com código testado e referenciado.
+*   **Descrição:** Executa a codificação iterativamente a partir do `temp_task.md`. Ao finalizar:
+    *   Executa as verificações locais (`npm run lint`, `npm run format`).
+    *   Apresenta o resultado ao desenvolvedor para **revisão manual** antes de prosseguir.
+    *   Deleta o arquivo `/temp_task.md` local como etapa de limpeza final da tarefa (clean-up).
+*   **Resultado:** Código revisado e aprovado pelo desenvolvedor antes do commit.
 
-### 4. Revisor Automático de PR (Antigravity SDK & GitHub Actions)
-*   **Tipo:** Custom Agent scriptado com o **Antigravity SDK** rodando no CI/CD.
-*   **Descrição:** Executado como um workflow no GitHub Actions a cada abertura ou atualização de Pull Request.
-    *   **Leitura de Regras:** Consome `.agents/rules/*` e `docs/architecture.md` para entender as diretrizes de código.
-    *   **Revisão Estrita:** Analisa o *diff* do código em busca de violações (ex: importações circulares, componentes não standalone, falta de tipagem Zod, ou falta de testes).
-    *   **Comentários Inline:** Posta feedbacks diretamente nas linhas da PR no GitHub.
-    *   **Aprovação:** Se o código seguir 100% das diretrizes e os testes do CI passarem, o agente adiciona um selo de aprovação técnica.
-*   **Resultado:** PR higienizada e avaliada antes da revisão final do desenvolvedor humano.
+### 4. Submissão & Pull Request (Submit Skill)
+*   **Tipo:** Custom Skill (`.agents/skills/submit-issue`)
+*   **Descrição:** Após aprovação humana, o agente gerencia o versionamento completo:
+    *   Infere o **prefixo semântico** correto (`feat`, `fix`, `chore`, `refactor`, etc.) a partir do contexto da issue.
+    *   Cria uma **branch descritiva** em kebab-case (ex: `chore/setup-linting-and-formatting`).
+    *   Realiza o commit semântico e o push para o remoto via HTTPS autenticado.
+    *   Abre uma **Pull Request estruturada** no GitHub com sumário de mudanças e evidências visuais (quando aplicável).
+*   **Resultado:** PR aberta com código testado, referenciado e documentado.
+
+> [!NOTE]
+> **Sobre Revisão Automatizada de PRs**: A automação da revisão de código via CI/CD foi avaliada e, por questões de soberania de dados (código não deve ser enviado a provedores de IA de terceiros sem contrato estabelecido) e custo operacional, optou-se pela **revisão humana** como etapa obrigatória do fluxo. Ferramentas como GitHub Copilot Enterprise ou Gemini Code Assist Enterprise são as alternativas viáveis para projetos profissionais que exijam essa automação com garantias contratuais.
 
 ---
 
@@ -84,9 +89,10 @@ Para habilitar esse fluxo, o repositório manterá a seguinte estrutura de confi
 │   └── testing-rules.md          # Padrões de Vitest, MSW e Playwright
 │
 └── skills/
-    ├── create-issue/             # Prompts e templates para geração de cards de demanda
+    ├── create-github-issue/      # Prompts e templates para geração de cards de demanda
     ├── generate-sdd/             # Engenharia de prompt para planejar modificações de arquivos
-    └── review-pr/                # Script do Antigravity SDK para revisão e feedback automatizado
+    ├── implement-issue/          # Orquestra planejamento e implementação a partir de uma issue
+    └── submit-issue/             # Commit semântico, branch descritiva e abertura de PR estruturada
 ```
 
 ---
