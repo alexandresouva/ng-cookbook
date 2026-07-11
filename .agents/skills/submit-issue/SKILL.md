@@ -56,22 +56,25 @@ This skill instructs the agent on how to automatically commit, push, and open a 
         ```bash
         git push https://x-access-token:$(gh auth token)@github.com/alexandresouva/ng-cookbook.git <branch_name>
         ```
-2.  **Generate Structured PR Body**: Draft a professional markdown Pull Request description containing:
-    ```markdown
-    ## 📝 Description
-    - [Bullet points summarizing the changes implemented]
+2.  **Generate Structured PR Body**: Write a professional markdown Pull Request description to a temporary file in the workspace root.
+    *   **CRITICAL**: You MUST name this file exactly `temp_pr_body.md`. This specific filename is in the `.gitignore` allow list. Do NOT use names like `pr-body.md`.
+    *   **Content**:
+        ```markdown
+        ## 📝 Description
+        - [Bullet points summarizing the changes implemented]
 
-    ## 🧪 Verification & Tests
-    - [Describe verification commands executed (e.g. npm run lint) and results]
+        ## 🧪 Verification & Tests
+        - [Describe verification commands executed (e.g. npm run lint) and results]
 
-    ## 📸 Visual Evidence
-    [Embed screenshot if captured, i.e., `![Visual Evidence](.agents/evidence/issue-<ISSUE_ID>-evidence.png)`, or state `N/A (Non-visual task)`]
+        ## 📸 Visual Evidence
+        [Embed screenshot if captured, i.e., `![Visual Evidence](.agents/evidence/issue-<ISSUE_ID>-evidence.png)`, or state `N/A (Non-visual task)`]
 
-    ---
-    Closes #<ISSUE_ID>
-    ```
-3.  **Create PR**: Create the Pull Request on GitHub using the explicit branch head flag to prevent upstream errors:
+        ---
+        Closes #<ISSUE_ID>
+        ```
+3.  **Create PR**: Create the Pull Request on GitHub using the explicit branch head flag and the body file to prevent upstream errors:
     ```bash
-    gh pr create --head <branch_name> --title "<prefix>: [Issue Title]" --body "STRUCTURED_BODY_TEXT"
+    gh pr create --head <branch_name> --title "<prefix>: [Issue Title]" --body-file temp_pr_body.md
     ```
+    *(Note: Remember to delete `temp_pr_body.md` after the Pull Request is successfully created).*
 4.  Output the URL of the created Pull Request to the developer.

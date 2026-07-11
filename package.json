@@ -8,7 +8,16 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "eslint .",
-    "lint:fix": "prettier --write \"src/**/*.{ts,html,css,scss}\""
+    "lint:fix": "prettier --write \"src/**/*.{ts,html,css,scss}\"",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{js,ts,html}": [
+      "eslint"
+    ],
+    "*.{scss,json,md}": [
+      "prettier --write"
+    ]
   },
   "private": true,
   "packageManager": "npm@11.16.0",
