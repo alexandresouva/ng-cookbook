@@ -13,6 +13,7 @@ This skill instructs the agent on how to generate and post structured issues to 
 > **Strict Rules for Issue Creation**:
 > - **Language**: All generated issue titles and bodies must be written in **English**.
 > - **No Phase/Sequential Prefixes**: Do not include prefixes such as `"Phase X:"`, `"Fase X:"`, or sequential numeric counters in the issue title. The title must focus strictly on the functional, business, or technical scope of the task (e.g., `"Linting & Formatting (ESLint + Prettier + EditorConfig)"` or `"User Authentication"`).
+> - **Labels**: Always determine and apply the appropriate label(s) based on the context (e.g., `bug`, `enhancement`, `feature`, `chore`, `documentation`).
 
 ### Format A: Technical Card (Default for Refactorings, Infra, and Quality)
 *   **Title:** `[Feature/Task Name]` (e.g. `Linting & Formatting (ESLint + Prettier + EditorConfig)`)
@@ -61,11 +62,16 @@ Attempt to read the GitHub token from one of the following sources, in this orde
 2.  **GitHub CLI (if installed)**: Running `gh auth token`
 If no credentials are found, prompt the user in the chat to provide a temporary token in environment variable format before continuing.
 
-### Step 2: Execute GitHub API Call
+### Step 2: Prepare the Issue Body File
+Write the issue markdown body to a temporary file in the workspace to avoid quoting and formatting issues in the shell.
+**CRITICAL**: You MUST name this file exactly `temp_issue.md`. This specific filename is in the `.gitignore` allow list. Do NOT use names like `issue-body.md`.
+
+### Step 3: Execute GitHub API Call
 If the `gh` CLI is installed and authenticated, execute:
 ```bash
-gh issue create --repo alexandresouva/ng-cookbook --title "TITLE_HERE" --body "MARKDOWN_BODY_HERE"
+gh issue create --repo alexandresouva/ng-cookbook --title "TITLE_HERE" -F temp_issue.md --label "LABEL_NAME"
 ```
+*(Note: Remember to delete `temp_issue.md` after the issue is successfully created).*
 
 Otherwise, use `curl` against the official REST API:
 ```bash
@@ -76,7 +82,10 @@ curl -s -X POST \
   -d @- <<EOF
 {
   "title": "TITLE_HERE",
-  "body": "MARKDOWN_BODY_HERE"
+  "body": "MARKDOWN_BODY_HERE",
+  "labels": [
+    "LABEL_NAME"
+  ]
 }
 EOF
 ```
