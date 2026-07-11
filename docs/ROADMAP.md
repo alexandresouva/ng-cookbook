@@ -53,8 +53,7 @@ graph TD
 
 - [x] **Linting & Formatting** (ESLint, Prettier, EditorConfig)
 - [x] **Git Hooks** (Husky, lint-staged, Commitlint)
-- [ ] **Feature-Based Architecture** (Folder Structure, Path Aliases & Boundary Enforcement)
-
+- [x] **Feature-Based Architecture** (Folder Structure, Path Aliases & Boundary Enforcement)
 - [ ] **Estilização & Design System** (Variables CSS, HSL Tailwind/Vanilla CSS Tokens)
 - [ ] **Developer Experience (DX)** (VS Code Workspace settings, sugestão de extensões recomendadas via `extensions.json` e perfis de debug padrão)
 - [ ] **Documentação Visual de Componentes** (Storybook para desenvolvimento isolado de componentes e catálogo visual)
