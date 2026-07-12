@@ -63,8 +63,8 @@ This skill instructs the agent on how to automatically commit, push, and open a 
       ```
 2.  **Generate Structured PR Body**:
     - Read the temporary Software Design Document file: `.agents/sdd/sdd-issue-<ISSUE_ID>.md`.
-    - Parse and extract the **Objective & Scope** and **Proposed Changes** sections from the SDD.
-    - Draft a professional markdown Pull Request description using those details:
+    - Parse and extract the **Objective & Scope** and **Proposed Changes** sections from the SDD to write a brief summary in the description.
+    - Draft a professional markdown Pull Request description wrapping the full raw SDD inside a collapsible `<details>` tag:
       ```markdown
       ## 📝 Description
 
@@ -77,6 +77,13 @@ This skill instructs the agent on how to automatically commit, push, and open a 
       ## 📸 Visual Evidence
 
       [Embed screenshot if captured, i.e., `![Visual Evidence](.agents/evidence/issue-<ISSUE_ID>-evidence.png)`, or state `N/A (Non-visual task)`]
+
+      <details>
+      <summary>🔍 Software Design Document (SDD) Reference</summary>
+
+      [Full raw contents of .agents/sdd/sdd-issue-<ISSUE_ID>.md here]
+
+      </details>
 
       ---
 
