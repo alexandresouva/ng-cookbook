@@ -1,73 +1,173 @@
-# Arquitetura & Organização de Pastas (Feature-Based)
+# Architecture & Folder Organization (Feature-Based)
 
-Esta documentação descreve as diretrizes arquiteturais recomendadas para este projeto Angular. Nosso objetivo é manter o código modular, altamente coeso, fracamente acoplado e de fácil escala.
+This document describes the definitive architectural guidelines for this Angular project.
+All decisions here are final and enforced by `eslint-plugin-boundaries` and TypeScript path aliases.
 
 ---
 
-## 🏗️ Padrão Feature-Based (Baseado em Funcionalidades)
-
-Em vez de organizar o código por tipo técnico (`components/`, `services/`, `pipes/`), nós organizamos nosso código ao redor de **domínios ou regras de negócio** chamados de **Features** (ex: `auth`, `products`, `billing`).
-
-Cada feature deve ser o mais autossuficiente possível.
-
-### Estrutura de Pastas Recomendada
+## 🏗️ Top-Level Structure
 
 ```text
 src/
-└── app/
-    ├── core/                # Recursos globais de instância única (Singletons)
-    │   ├── guards/          # Guards globais (ex: auth.guard.ts)
-    │   ├── interceptors/    # Interceptors HTTP (ex: auth.interceptor.ts)
-    │   └── services/        # Serviços globais (ex: theme.service.ts)
-    │
-    ├── shared/              # Recursos reutilizáveis compartilhados entre features
-    │   ├── components/      # Componentes UI reutilizáveis (ex: button, input, modal)
-    │   ├── directives/      # Diretivas globais
-    │   └── pipes/           # Pipes reutilizáveis
-    │
-    └── features/            # Domínios de negócio independentes
-        ├── products/        # Exemplo de Feature: Produtos
-        │   ├── data-access/ # Gerenciamento de estado e chamadas API
-        │   ├── feature/     # Componentes inteligentes / Páginas com rotas
-        │   ├── ui/          # Componentes apresentacionais da feature
-        │   └── utils/       # Helpers específicos deste domínio
-        │
-        └── checkout/        # Exemplo de Feature: Checkout
-            ├── data-access/
-            ├── feature/
-            ├── ui/
-            └── utils/
+├── app/
+│   ├── core/       # Global singletons — one instance per app
+│   ├── shared/     # Reusable across features — zero business logic
+│   └── features/   # Business domain modules — lazy-loaded
+├── environments/
+└── assets/
+    └── i18n/       # Translation files (pt-BR.json, en-US.json)
 ```
 
 ---
 
-## 🧩 Divisão Interna das Features (Padrão Nx/DDD)
+## 🔐 `core/` — Global Singletons
 
-Inspirado nas diretrizes do Nx monorepo, cada feature é segmentada em sub-responsabilidades específicas:
+Each concern has its own subfolder. No generic `services/` dumping ground.
 
-### 1. `data-access`
-Contém a lógica de busca e gerenciamento de estado (Store).
-*   **O que contém:** Serviços HTTP, store do NgRx ou State baseado em Signals, guards específicos de acesso a dados.
-*   **Regra:** Não deve conter elementos visuais (HTML/CSS), apenas lógica e dados.
-
-### 2. `feature`
-Componentes inteligentes que conectam a interface com os dados (`data-access`).
-*   **O que contém:** Componentes agregadores que gerenciam a orquestração da tela, resolvem dados de rotas, despacham ações.
-*   **Regra:** Geralmente possui rotas associadas (`products.routes.ts`).
-
-### 3. `ui`
-Componentes de interface puramente visuais e reaproveitáveis dentro desta feature específica.
-*   **O que contém:** Componentes apresentacionais ("burros") que recebem dados via inputs (`input()`) e notificam eventos via outputs (`output()`).
-*   **Regra:** Não injetam serviços de dados diretamente.
-
-### 4. `utils`
-Utilitários específicos que não fazem sentido estarem globais no `shared/`.
-*   **O que contém:** Tipagem específica, formatadores de data locais, helpers matemáticos para aquela tela.
+```text
+core/
+├── auth/
+│   ├── guards/
+│   ├── interceptors/
+│   └── services/
+├── layout/
+│   ├── components/       # Header, Sidebar, Footer
+│   ├── services/         # Layout state (collapsed, breakpoints)
+│   └── constants/        # Nav items, breakpoints config
+├── theme/                # ThemeService, design tokens
+├── logger/
+│   ├── logger.service.ts           # Structured logging (dev → console, prod → Sentry)
+│   └── global-error.handler.ts    # Angular ErrorHandler using LoggerService
+├── analytics/            # Telemetry / tracking service
+└── i18n/
+    ├── i18n.service.ts
+    └── constants/
+        └── supported-locales.constants.ts
+```
 
 ---
 
-## 💡 Princípios de Desenvolvimento
+## 🔄 `shared/` — Reusable UI & Utilities
 
-1.  **Strict Standalone Components:** Todos os novos componentes, diretivas e pipes devem ser standalone (`standalone: true`). Não utilizamos `NgModule`.
-2.  **Signals First:** Priorize o uso de `signals` e `computed` para reatividade local em substituição ao RxJS (ex: gerenciamento de estado de UI simples, formulários). Use RxJS (`Observable`) principalmente para chamadas assíncronas assíncronas HTTP ou fluxos complexos de tempo/concorrência.
-3.  **Strict Lint Rules:** Imports devem sempre ser limpos. Evite imports relativos muito longos (ex: `../../../../shared`). Prefira caminhos com aliases (ex: `@shared/*`, `@core/*`).
+Zero business logic. Never imports from `core/` or `features/`.
+
+```text
+shared/
+├── components/   # Dumb UI components (Button, Input, Modal, Card)
+├── directives/
+├── pipes/
+└── utils/        # Pure functions reusable across features (formatters, helpers)
+```
+
+---
+
+## 🚀 `features/` — Business Domains (Lazy-Loaded)
+
+Each feature is a self-contained domain. Internal layers follow a strict naming convention.
+
+### Standard Feature Structure
+
+```text
+features/
+└── products/
+    ├── data-access/
+    │   ├── products.api.ts        # HTTP only — returns domain models (never DTOs)
+    │   ├── products.mapper.ts     # ProductDTO → Product (ACL — private, not exported)
+    │   ├── products.store.ts      # Reactive state via Angular Signals (pure state container)
+    │   ├── products.service.ts    # Frontend domain logic (filtering, calculations, rules)
+    │   ├── products.facade.ts     # Single entry point for components
+    │   └── index.ts               # Public API: exports ONLY the Facade
+    ├── models/
+    │   ├── product.model.ts       # Domain model (Product interface)
+    │   ├── product.dto.ts         # API contract shape — stays private to data-access
+    │   └── index.ts
+    ├── pages/                     # Smart components — route targets
+    │   ├── product-list/
+    │   └── product-detail/
+    ├── components/                # Dumb components specific to this feature
+    │   └── product-card/
+    └── products.routes.ts
+```
+
+### When to Introduce Sub-Features
+
+Split when a feature exceeds ~3 pages **or** has 2+ independent stores.
+
+```text
+features/
+└── products/
+    ├── shared/
+    │   ├── models/
+    │   ├── data-access/
+    │   └── components/
+    ├── catalog/
+    │   ├── data-access/
+    │   ├── pages/
+    │   └── components/
+    ├── detail/
+    │   ├── data-access/
+    │   ├── pages/
+    │   └── components/
+    └── products.routes.ts
+```
+
+---
+
+## 📐 Naming Conventions
+
+| Suffix        | Purpose                                                         | Example                |
+| :------------ | :-------------------------------------------------------------- | :--------------------- |
+| `.api.ts`     | HTTP service — communicates with the API, returns domain models | `products.api.ts`      |
+| `.mapper.ts`  | Transforms DTO → domain model (Anti-Corruption Layer)           | `products.mapper.ts`   |
+| `.store.ts`   | Reactive state container (Angular Signals)                      | `products.store.ts`    |
+| `.service.ts` | Frontend domain logic (pure business rules, no HTTP)            | `products.service.ts`  |
+| `.facade.ts`  | Orchestrator — single entry point for components                | `products.facade.ts`   |
+| `.model.ts`   | Domain interface/type                                           | `product.model.ts`     |
+| `.dto.ts`     | API response shape (never leaves `data-access/`)                | `product.dto.ts`       |
+| `.routes.ts`  | Feature route declarations                                      | `products.routes.ts`   |
+| `.page.ts`    | Smart component / route target (inside `pages/`)                | `product-list.page.ts` |
+
+---
+
+## 🧩 Architectural Patterns
+
+### Facade Pattern
+
+Components **only** inject the Facade. They never inject the Store, Api, or Service directly.
+
+```
+Component → Facade → Store (state) + Api (HTTP) + Service (logic)
+```
+
+### Anti-Corruption Layer (ACL)
+
+DTOs never cross the `data-access/` boundary. The `.api.ts` applies the mapper before returning
+data — the rest of the app only knows domain models.
+
+```
+API (ProductDTO) → .api.ts → .mapper.ts → Product → rest of the app
+```
+
+---
+
+## 📏 Dependency Rules
+
+| Layer                    | Can import                                                        | Cannot import            |
+| :----------------------- | :---------------------------------------------------------------- | :----------------------- |
+| `core/`                  | `shared/`                                                         | `features/`              |
+| `shared/`                | Nothing internal                                                  | `core/`, `features/`     |
+| `features/X/data-access` | `core/`, `shared/`, own `models/`                                 | Another feature          |
+| `features/X/pages`       | own `data-access` (via Facade only), own `components/`, `shared/` | Another feature          |
+| `features/X/components`  | `shared/`, own `models/`                                          | `data-access/`, `pages/` |
+
+Enforced by `eslint-plugin-boundaries`. Violations cause `npm run lint` to fail.
+
+---
+
+## 🔗 TypeScript Path Aliases
+
+```
+@core/*     → src/app/core/*
+@shared/*   → src/app/shared/*
+@features/* → src/app/features/*
+```

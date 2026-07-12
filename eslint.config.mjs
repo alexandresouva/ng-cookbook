@@ -7,6 +7,7 @@ import { FlatCompat } from '@eslint/eslintrc';
 import eslint from '@eslint/js';
 import angular from 'angular-eslint';
 import { defineConfig, globalIgnores } from 'eslint/config';
+import boundaries from 'eslint-plugin-boundaries';
 import importPlugin from 'eslint-plugin-import';
 import prettierPlugin from 'eslint-plugin-prettier';
 
@@ -164,6 +165,53 @@ export default defineConfig([
     rules: {
       '@typescript-eslint/unbound-method': 'off',
       '@typescript-eslint/explicit-function-return-type': 'off',
+    },
+  },
+  {
+    plugins: { boundaries },
+    settings: {
+      'boundaries/elements': [
+        { type: 'core', pattern: 'src/app/core/*' },
+        { type: 'shared', pattern: 'src/app/shared/*' },
+        { type: 'feature', pattern: 'src/app/features/*' },
+      ],
+      'boundaries/ignore': [
+        'src/app/app.component.ts',
+        'src/app/app.routes.ts',
+        'src/app/app.config.ts',
+      ],
+      'import/resolver': {
+        typescript: {
+          alwaysTryTypes: true,
+          project: ['tsconfig.json', 'tsconfig.app.json', 'tsconfig.spec.json'],
+          noWarnOnMultipleProjects: true,
+        },
+      },
+    },
+    rules: {
+      'boundaries/dependencies': [
+        'error',
+        {
+          default: 'disallow',
+          policies: [
+            {
+              from: { element: { type: 'core' } },
+              allow: [{ to: { element: { type: 'shared' } } }],
+            },
+            {
+              from: { element: { type: 'shared' } },
+              allow: [],
+            },
+            {
+              from: { element: { type: 'feature' } },
+              allow: [
+                { to: { element: { type: 'core' } } },
+                { to: { element: { type: 'shared' } } },
+              ],
+            },
+          ],
+        },
+      ],
     },
   },
 ]);
