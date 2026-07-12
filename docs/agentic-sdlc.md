@@ -72,11 +72,10 @@ sequenceDiagram
 - **Descrição:** Após aprovação humana, o agente gerencia o versionamento completo:
   - Infere o **prefixo semântico** correto (`feat`, `fix`, `chore`, `refactor`, etc.) a partir do contexto da issue.
   - Cria uma **branch descritiva** em kebab-case (ex: `chore/setup-linting-and-formatting`).
-  - Lê o arquivo de design técnico local (SDD), extrai o objetivo e as mudanças mapeadas para gerar o sumário da Pull Request (`## 📝 Description`).
   - Cria o commit semântico e faz o push para o remoto via HTTPS autenticado.
-  - Abre uma **Pull Request estruturada** no GitHub com a descrição importada do SDD.
-  - Deleta o arquivo temporário do SDD local como etapa final de limpeza do workspace.
-- **Resultado:** PR aberta com código testado, referenciado e documentado, sem reter artefatos de planejamento temporários no repositório.
+  - Abre uma **Pull Request estruturada** no GitHub com sumário de mudanças e evidências de verificação.
+  - Deleta o arquivo temporário do SDD local como etapa final de limpeza do workspace (o SDD serve apenas como guia de apoio para o desenvolvedor durante o ciclo).
+- **Resultado:** PR aberta com código testado, referenciado e documentado, mantendo a PR limpa e livre de artefatos de planejamento temporários.
 
 > [!NOTE]
 > **Sobre Revisão Automatizada de PRs**: A automação da revisão de código via CI/CD foi avaliada e, por questões de soberania de dados (código não deve ser enviado a provedores de IA de terceiros sem contrato estabelecido) e custo operacional, optou-se pela **revisão humana** como etapa obrigatória do fluxo. Ferramentas como GitHub Copilot Enterprise ou Gemini Code Assist Enterprise são as alternativas viáveis para projetos profissionais que exijam essa automação com garantias contratuais.

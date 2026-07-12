@@ -61,34 +61,24 @@ This skill instructs the agent on how to automatically commit, push, and open a 
       ```bash
       git push https://x-access-token:$(gh auth token)@github.com/alexandresouva/ng-cookbook.git <branch_name>
       ```
-2.  **Generate Structured PR Body**:
-    - Read the temporary Software Design Document file: `.agents/sdd/sdd-issue-<ISSUE_ID>.md`.
-    - Parse and extract the **Objective & Scope** and **Proposed Changes** sections from the SDD to write a brief summary in the description.
-    - Draft a professional markdown Pull Request description wrapping the full raw SDD inside a collapsible `<details>` tag:
-      ```markdown
-      ## 📝 Description
+2.  **Generate Structured PR Body**: Draft a professional markdown Pull Request description containing:
+    ```markdown
+    ## 📝 Description
 
-      - [Summary of changes derived from the SDD's Objective & Scope and Proposed Changes]
+    - [Bullet points summarizing the changes implemented]
 
-      ## 🧪 Verification & Tests
+    ## 🧪 Verification & Tests
 
-      - [Describe verification commands executed (e.g. npm run lint) and results]
+    - [Describe verification commands executed (e.g. npm run lint) and results]
 
-      ## 📸 Visual Evidence
+    ## 📸 Visual Evidence
 
-      [Embed screenshot if captured, i.e., `![Visual Evidence](.agents/evidence/issue-<ISSUE_ID>-evidence.png)`, or state `N/A (Non-visual task)`]
+    [Embed screenshot if captured, i.e., `![Visual Evidence](.agents/evidence/issue-<ISSUE_ID>-evidence.png)`, or state `N/A (Non-visual task)`]
 
-      <details>
-      <summary>🔍 Software Design Document (SDD) Reference</summary>
+    ---
 
-      [Full raw contents of .agents/sdd/sdd-issue-<ISSUE_ID>.md here]
-
-      </details>
-
-      ---
-
-      Closes #<ISSUE_ID>
-      ```
+    Closes #<ISSUE_ID>
+    ```
 3.  **Create PR**: Create the Pull Request on GitHub using the explicit branch head flag to prevent upstream errors:
     ```bash
     gh pr create --head <branch_name> --title "<prefix>(#<ISSUE_ID>): [Issue Title]" --body "STRUCTURED_BODY_TEXT"
@@ -96,6 +86,6 @@ This skill instructs the agent on how to automatically commit, push, and open a 
 4.  **Final Cleanup**:
     - Delete the local temporary SDD file:
       ```bash
-      rm .agents/sdd/sdd-issue-<ISSUE_ID>.md
+      rm -f .agents/sdd/sdd-issue-<ISSUE_ID>.md
       ```
 5.  Output the URL of the created Pull Request to the developer.
