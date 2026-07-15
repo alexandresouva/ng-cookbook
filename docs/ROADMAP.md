@@ -58,7 +58,7 @@ graph TD
 - [ ] **Developer Experience (DX)** (VS Code Workspace settings, sugestão de extensões recomendadas via `extensions.json` e perfis de debug padrão)
 - [ ] **Documentação Visual de Componentes** (Storybook para desenvolvimento isolado de componentes e catálogo visual)
 - [ ] **Validação de Schemas & Runtime Checking** (Zod para validação em runtime de respostas de API e schemas complexos de formulários)
-- [ ] **Templates de Documentação Técnica** (Estruturação de templates de **ADR** - Architecture Decision Records e **RFC** - Request for Comments na pasta `docs/` para governança de decisões arquiteturais)
+- [x] **Templates de Documentação Técnica** (Estruturação de templates de **ADR** - Architecture Decision Records e **RFC** - Request for Comments na pasta `docs/` para governança de decisões arquiteturais)
 
 ---
 
