@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { ProductMapper } from './products.mapper';
+import { ProductDto } from '../models/product.dto';
 import { Product } from '../models/product.model';
 
 @Injectable({ providedIn: 'root' })
@@ -13,13 +14,13 @@ export class ProductsApi {
 
   getProduct(id: string): Observable<Product> {
     return this.http
-      .get<unknown>(`/api/products/${id}`)
+      .get<ProductDto>(`/api/products/${id}`)
       .pipe(map((response) => ProductMapper.toDomain(response)));
   }
 
   getProducts(): Observable<Product[]> {
     return this.http
-      .get<unknown>('/api/products')
+      .get<ProductDto[]>('/api/products')
       .pipe(map((response) => ProductMapper.toDomainList(response)));
   }
 }
