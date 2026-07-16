@@ -54,10 +54,7 @@ graph TD
 - [x] **Linting & Formatting** (ESLint, Prettier, EditorConfig)
 - [x] **Git Hooks** (Husky, lint-staged, Commitlint)
 - [x] **Feature-Based Architecture** (Folder Structure, Path Aliases & Boundary Enforcement)
-- [ ] **Estilização & Design System** (Variables CSS, HSL Tailwind/Vanilla CSS Tokens)
-- [ ] **Developer Experience (DX)** (VS Code Workspace settings, sugestão de extensões recomendadas via `extensions.json` e perfis de debug padrão)
-- [ ] **Documentação Visual de Componentes** (Storybook para desenvolvimento isolado de componentes e catálogo visual)
-- [ ] **Validação de Schemas & Runtime Checking** (Zod para validação em runtime de respostas de API e schemas complexos de formulários)
+- [x] **Zod DTOs & Mappers (Anti-Corruption Layer):** Validação em runtime e sanitização de payloads de API (DTOs), transformando-os em modelos de domínio tipados.
 - [x] **Templates de Documentação Técnica** (Estruturação de templates de **ADR** - Architecture Decision Records e **RFC** - Request for Comments na pasta `docs/` para governança de decisões arquiteturais)
 
 ---
