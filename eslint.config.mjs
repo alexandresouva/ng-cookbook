@@ -171,9 +171,40 @@ export default defineConfig([
     plugins: { boundaries },
     settings: {
       'boundaries/elements': [
-        { type: 'core', pattern: 'src/app/core/*' },
-        { type: 'shared', pattern: 'src/app/shared/*' },
-        { type: 'feature', pattern: 'src/app/features/*' },
+        { type: 'core', pattern: 'src/app/core' },
+        { type: 'shared', pattern: 'src/app/shared' },
+        // Fine-grained feature elements to track sub-folders under default folder mode
+        {
+          type: 'feature-data-access',
+          pattern: 'src/app/features/*/data-access',
+          capture: ['featureName'],
+        },
+        {
+          type: 'feature-models',
+          pattern: 'src/app/features/*/models',
+          capture: ['featureName'],
+        },
+        {
+          type: 'feature-domain',
+          pattern: 'src/app/features/*/domain',
+          capture: ['featureName'],
+        },
+        {
+          type: 'feature-pages',
+          pattern: 'src/app/features/*/pages',
+          capture: ['featureName'],
+        },
+        {
+          type: 'feature-components',
+          pattern: 'src/app/features/*/components',
+          capture: ['featureName'],
+        },
+        // Fallback for root feature folder
+        { type: 'feature', pattern: 'src/app/features/*', capture: ['featureName'] },
+      ],
+      'boundaries/entry-points': [
+        { type: 'feature-data-access', pattern: 'index.ts' },
+        { type: 'feature-models', pattern: 'index.ts' },
       ],
       'boundaries/ignore': [
         'src/app/app.component.ts',
@@ -189,6 +220,22 @@ export default defineConfig([
       },
     },
     rules: {
+      'boundaries/entry-point': [
+        'error',
+        {
+          default: 'allow',
+          policies: [
+            {
+              target: { element: { type: 'feature-data-access' } },
+              allow: 'index.ts',
+            },
+            {
+              target: { element: { type: 'feature-models' } },
+              allow: 'index.ts',
+            },
+          ],
+        },
+      ],
       'boundaries/dependencies': [
         'error',
         {
@@ -202,11 +249,141 @@ export default defineConfig([
               from: { element: { type: 'shared' } },
               allow: [],
             },
+            // Boundaries for Page layer
+            {
+              from: { element: { type: 'feature-pages' } },
+              allow: [
+                { to: { element: { type: 'core' } } },
+                { to: { element: { type: 'shared' } } },
+                {
+                  to: {
+                    element: {
+                      type: 'feature-components',
+                      captured: { featureName: '{{from.captured.featureName}}' },
+                    },
+                  },
+                },
+                {
+                  to: {
+                    element: {
+                      type: 'feature-data-access',
+                      captured: { featureName: '{{from.captured.featureName}}' },
+                    },
+                  },
+                },
+                {
+                  to: {
+                    element: {
+                      type: 'feature-domain',
+                      captured: { featureName: '{{from.captured.featureName}}' },
+                    },
+                  },
+                },
+                {
+                  to: {
+                    element: {
+                      type: 'feature-models',
+                      captured: { featureName: '{{from.captured.featureName}}' },
+                    },
+                  },
+                },
+              ],
+            },
+            // Boundaries for Component layer
+            {
+              from: { element: { type: 'feature-components' } },
+              allow: [
+                { to: { element: { type: 'shared' } } },
+                {
+                  to: {
+                    element: {
+                      type: 'feature-models',
+                      captured: { featureName: '{{from.captured.featureName}}' },
+                    },
+                  },
+                },
+                {
+                  to: {
+                    element: {
+                      type: 'feature-domain',
+                      captured: { featureName: '{{from.captured.featureName}}' },
+                    },
+                  },
+                },
+              ],
+            },
+            // Boundaries for Data-Access layer
+            {
+              from: { element: { type: 'feature-data-access' } },
+              allow: [
+                { to: { element: { type: 'core' } } },
+                { to: { element: { type: 'shared' } } },
+                {
+                  to: {
+                    element: {
+                      type: 'feature-models',
+                      captured: { featureName: '{{from.captured.featureName}}' },
+                    },
+                  },
+                },
+                {
+                  to: {
+                    element: {
+                      type: 'feature-domain',
+                      captured: { featureName: '{{from.captured.featureName}}' },
+                    },
+                  },
+                },
+              ],
+            },
+            // Boundaries for Domain layer
+            {
+              from: { element: { type: 'feature-domain' } },
+              allow: [{ to: { element: { type: 'shared' } } }],
+            },
+            // Boundaries for Models layer
+            {
+              from: { element: { type: 'feature-models' } },
+              allow: [{ to: { element: { type: 'shared' } } }],
+            },
+            // Boundaries for root Feature files (like route configurations)
             {
               from: { element: { type: 'feature' } },
               allow: [
                 { to: { element: { type: 'core' } } },
                 { to: { element: { type: 'shared' } } },
+                {
+                  to: {
+                    element: {
+                      type: 'feature-pages',
+                      captured: { featureName: '{{from.captured.featureName}}' },
+                    },
+                  },
+                },
+                {
+                  to: {
+                    element: {
+                      type: 'feature-components',
+                      captured: { featureName: '{{from.captured.featureName}}' },
+                    },
+                  },
+                },
+                {
+                  to: {
+                    element: {
+                      type: 'feature-data-access',
+                      captured: { featureName: '{{from.captured.featureName}}' },
+                    },
+                  },
+                },
+                {
+                  to: {
+                    element: {
+                      type: 'feature-domain',
+                      captured: { featureName: '{{from.captured.featureName}}' },
+                    },
+                  },
+                },
               ],
             },
           ],

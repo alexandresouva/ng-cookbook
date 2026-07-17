@@ -63,53 +63,61 @@ shared/
 
 ## 🚀 `features/` — Business Domains (Lazy-Loaded)
 
-Each feature is a self-contained domain. Internal layers follow a strict naming convention.
+Each feature is a self-contained domain. To follow the **KISS (Keep It Simple, Stupid)** principle, we adopt a **Progressive Architecture** that scales based on the feature's business complexity.
 
-### Standard Feature Structure
+### ⚡ Feature Scaling Levels
 
-```text
-features/
-└── products/
-    ├── data-access/
-    │   ├── products.api.ts        # HTTP only — returns domain models (never DTOs)
-    │   ├── products.mapper.ts     # ProductDTO → Product (ACL — private, not exported)
-    │   ├── products.store.ts      # Reactive state via Angular Signals (pure state container)
-    │   ├── products.service.ts    # Frontend domain logic (filtering, calculations, rules)
-    │   ├── products.facade.ts     # Single entry point for components
-    │   └── index.ts               # Public API: exports ONLY the Facade
-    ├── models/
-    │   ├── product.model.ts       # Domain model (Product interface)
-    │   ├── product.dto.ts         # API contract shape — stays private to data-access
-    │   └── index.ts
-    ├── pages/                     # Smart components — route targets
-    │   ├── product-list/
-    │   └── product-detail/
-    ├── components/                # Dumb components specific to this feature
-    │   └── product-card/
-    └── products.routes.ts
-```
+#### Level 1: Pragmatic / Unified (Default / Simple Features)
 
-### When to Introduce Sub-Features
+For CRUD features, simple lists, or features with basic front-end rules:
 
-Split when a feature exceeds ~3 pages **or** has 2+ independent stores.
+- **`models/`**: Holds models (`.model.ts`) and DTO schemas (`.dto.ts`).
+- **`data-access/`**: Groups all non-visual components together (`.api.ts`, `.store.ts`, `.mapper.ts`, `.service.ts`, `.facade.ts`).
+- **`pages/` & `components/`**: Smart and dumb components.
+
+Example (Products feature):
 
 ```text
-features/
-└── products/
-    ├── shared/
-    │   ├── models/
-    │   ├── data-access/
-    │   └── components/
-    ├── catalog/
-    │   ├── data-access/
-    │   ├── pages/
-    │   └── components/
-    ├── detail/
-    │   ├── data-access/
-    │   ├── pages/
-    │   └── components/
-    └── products.routes.ts
+features/products/
+├── data-access/
+│   ├── products.api.ts      # HTTP Client
+│   ├── products.store.ts    # Signal State
+│   ├── products.mapper.ts   # ProductDto -> Product
+│   ├── products.service.ts  # Rules & Calculations
+│   ├── products.facade.ts   # Orchestrator
+│   └── index.ts             # Exports ONLY ProductsFacade
+├── models/
+│   ├── product.dto.ts       # Raw response schema (Zod)
+│   ├── product.model.ts     # Domain model
+│   └── index.ts             # Exports ONLY product.model
 ```
+
+#### Level 2: Strict DDD / Separated (Complex Features)
+
+Upgrade to this structure when a feature has highly complex rules, async workflows, heavy domain calculations, or needs 100% isolated business unit testing (e.g. cart, checkout, payments):
+
+- **`domain/`**: Houses pure business model interfaces and pure business logic services. It has **zero dependencies** on Angular, HTTP clients, or stores.
+- **`data-access/`**: Houses all technical infrastructure (API, Store, Mapper, Facade) and private DTO schemas. No root-level `models/` directory is needed.
+
+Example (Cart feature):
+
+```text
+features/cart/
+├── domain/                  # Pure Business Logic Layer
+│   ├── cart.model.ts        # Domain models (Cart, CartItem)
+│   └── cart.service.ts      # Pure domain services (discount rules, limits)
+├── data-access/             # Technical Infrastructure Layer
+│   ├── cart.api.ts          # HTTP sync client
+│   ├── cart.dto.ts          # Private DTO schema (Zod)
+│   ├── cart.mapper.ts       # CartDto -> Cart Mapper
+│   ├── cart.store.ts        # Signal State
+│   ├── cart.facade.ts       # Orchestrates domain/ & data-access/
+│   └── index.ts             # Exports ONLY CartFacade
+```
+
+### When to Split into Sub-Features
+
+For extremely large modules, split the domain when a feature exceeds ~3 pages **or** has 2+ independent stores (e.g. splitting `products` into `catalog` and `detail`).
 
 ---
 

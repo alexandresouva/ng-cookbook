@@ -5,6 +5,26 @@ Cross-reference: `docs/architecture.md`
 
 ---
 
+## ⚡ Progressive Architecture (KISS)
+
+Features should scale dynamically based on their complexity:
+
+1. **Level 1 (Pragmatic / Unified - Default)**:
+   - For simple CRUD or straight data listings.
+   - Folder structure:
+     - `models/`: Domain models and DTO validation schemas.
+     - `data-access/`: API, Store, Mapper, and Facade all live together.
+   - All business logic goes in `<feature>.service.ts` inside `data-access/`.
+
+2. **Level 2 (Strict DDD / Separated - Complex Features)**:
+   - For features with rich business calculations, async flows, or heavy rules (e.g. cart, checkout, payments).
+   - Folder structure:
+     - `domain/`: Pure business models (`.model.ts`) and pure business logic services (`.service.ts`). Absolutely NO dependency on Angular DI, HttpClient, or stores.
+     - `data-access/`: Technical infrastructure: API (`.api.ts`), Store (`.store.ts`), Mapper (`.mapper.ts`), and Facade (`.facade.ts`).
+     - DTO validation schemas (`.dto.ts`) are kept private inside `data-access/` and never exported.
+
+---
+
 ## Folder Placement Rules
 
 - New **global singleton** (guard, interceptor, global service) → `src/app/core/<concern>/`
