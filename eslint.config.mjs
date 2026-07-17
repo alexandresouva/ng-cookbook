@@ -20,7 +20,13 @@ const compat = new FlatCompat({
 });
 
 export default defineConfig([
-  globalIgnores(['projects/**/*', '.angular/**/*', 'dist/**/*']),
+  globalIgnores([
+    'projects/**/*',
+    '.angular/**/*',
+    'dist/**/*',
+    'coverage/**/*',
+    'vitest.config.ts',
+  ]),
   {
     extends: compat.extends('plugin:prettier/recommended'),
     plugins: {

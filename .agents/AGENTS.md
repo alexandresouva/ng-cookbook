@@ -17,3 +17,7 @@ Before writing or modifying any code in this repository, locate and read the rel
 3. **Zod Validation, DTOs & Mappers**:
    - Reference: [.agents/rules/zod-rules.md](file:///./.agents/rules/zod-rules.md)
    - Rules on Zod schema configurations, deriving DTO types, and static Mapper classes (Anti-Corruption Layer).
+
+4. **Unit Testing with Vitest (Mocks, Setups, Coverage)**:
+   - Reference: [.agents/rules/testing-rules.md](file:///./.agents/rules/testing-rules.md)
+   - Rules on unit testing guidelines, setup function patterns, centralized mock factories, and coverage policies.

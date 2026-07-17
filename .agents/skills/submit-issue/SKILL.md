@@ -28,9 +28,9 @@ This skill instructs the agent on how to automatically commit, push, and open a 
 
 ### Step 3: Branching & Committing
 
-1.  Create and checkout a new local branch using the dynamic prefix and the kebab-case short description:
+1.  Verify that you are on the correct active feature branch (which was created at the beginning by the `implement-issue` skill):
     ```bash
-    git checkout -b <prefix>/<kebab-case-short-description>
+    git branch --show-current
     ```
 2.  Stage the modified and created files:
     ```bash
