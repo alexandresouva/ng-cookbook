@@ -6,7 +6,7 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test",
+    "test": "ng test --watch=false --coverage",
     "lint": "eslint .",
     "lint:fix": "prettier --write \"src/**/*.{ts,html,css,scss}\"",
     "prepare": "husky"
@@ -39,6 +39,7 @@
     "@commitlint/cli": "^20.5.3",
     "@commitlint/config-conventional": "^20.5.3",
     "@eslint/eslintrc": "^3.3.5",
+    "@vitest/coverage-v8": "^4.1.10",
     "angular-eslint": "^22.0.0",
     "eslint": "^9.39.4",
     "eslint-config-prettier": "^10.1.8",
