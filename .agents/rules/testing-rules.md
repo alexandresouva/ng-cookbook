@@ -11,3 +11,7 @@ Always follow these rules when writing or refactoring unit tests:
    - Use the unified `TestHelper` class from `@testing/test-helper/test-helper` to query, trigger, and dispatch actions in component tests. Always target `data-testid` attributes in HTML templates for element selection.
    - Smart components must only have their Facades mocked. Never mock internal Stores/APIs inside a page test.
    - Dumb components must be tested using `fixture.componentRef.setInput()` for signal inputs and subscribing to `output()` emitters.
+7. **Accessibility Testing (a11y) Rules**:
+   - Every presentation/shared UI component (Dumb Component) and Page (Smart Component) MUST have a companion accessibility audit test case using `vitest-axe` (acting as a standard quality check similar to the "should create" validation).
+   - Run `axe(fixture.nativeElement)` after `fixture.detectChanges()` to assert that no accessibility violations exist: `expect(await axe(fixture.nativeElement)).toHaveNoViolations()`.
+   - **Third-Party Components**: If a third-party library component has an accessibility bug, you may selectively disable that specific rule in the test options. You MUST include a code comment linking to the upstream issue or bug report.
