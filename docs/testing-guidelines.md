@@ -248,6 +248,58 @@ describe('ProductCard', () => {
 });
 ```
 
+---
+
+## 5. Accessibility Testing Guidelines (a11y)
+
+Accessibility (a11y) checks ensure that our components adhere to web standards (WCAG 2.1) and work properly with assistive technologies.
+
+### Rules & Quality Gate
+
+1. **Mandatory Audit**: Every Page component (Smart) and presentation UI component (Dumb) MUST have a dedicated accessibility test case. This is a basic gate similar to the `"should create"` test.
+2. **Global Expectation**: The matcher `toHaveNoViolations` is automatically registered globally via `src/test-setup.ts`. Do not import `expect.extend(toHaveNoViolations)` locally in spec files.
+
+### Standard Test Pattern
+
+To test accessibility, import `axe` from `vitest-axe` and audit the native rendered element:
+
+```typescript
+import { axe } from 'vitest-axe';
+
+it('should have no accessibility violations', async () => {
+  const { fixture } = setup();
+  fixture.detectChanges(); // Trigger template compilation and layout rendering
+
+  const results = await axe(fixture.nativeElement);
+  expect(results).toHaveNoViolations();
+});
 ```
 
+### Handling Third-Party Component Violations
+
+If you are using a third-party library component (e.g. from an external library) that has an accessibility bug you cannot fix directly:
+
+1. **Never skip the entire test case**.
+2. **Selectively disable only the conflicting rule** in the `axe` configuration options.
+3. **Include a code comment** linking to the upstream bug report or issue tracking the resolution.
+
+_Example:_
+
+```typescript
+import { axe } from 'vitest-axe';
+
+it('should have no accessibility violations except known color contrast bugs', async () => {
+  const { fixture } = setup();
+  fixture.detectChanges();
+
+  const results = await axe(fixture.nativeElement, {
+    rules: {
+      // Disabling color-contrast rule due to third-party library bug
+      // Upstream bug report: https://github.com/some-library/issues/4567
+      'color-contrast': { enabled: false },
+    },
+  });
+
+  expect(results).toHaveNoViolations();
+});
 ```
