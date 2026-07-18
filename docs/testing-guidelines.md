@@ -123,6 +123,19 @@ export function createMockProduct(overrides?: Partial<Product>): Product {
 
 Component testing verifies that the component class and template interact correctly. To prevent boilerplate DOM queries and handle typings safely, use the **`TestHelper`** class from `@testing/test-helper/test-helper`.
 
+### Component Types and Testing Focus
+
+Before writing component tests, identify the component's category:
+
+#### Smart Components (Pages / Container Components)
+- **Rule**: Smart components must only interact with their corresponding Facade.
+- **Testing Goal**: Verify that the component displays loading/error states from the Facade, renders lists/details, and delegates user actions to the Facade methods.
+- **Mocking**: Always mock the Facade using `vi.fn()` or plain mock objects, and provide it in `TestBed`.
+
+#### Dumb Components (Shared / UI Components)
+- **Rule**: Dumb components do not inject services. They communicate purely via `input()` and `output()`.
+- **Testing Goal**: Verify that inputs render properly and outputs emit correct events on user action.
+
 ### Why use `TestHelper`?
 - **Standardized Queries**: Access elements consistently using `queries.query('testid')` (always targets `[data-testid="..."]`).
 - **Trigger vs. Dispatch**:
