@@ -26,6 +26,9 @@ export default defineConfig([
     'dist/**/*',
     'coverage/**/*',
     'vitest.config.ts',
+    'playwright-report/**/*',
+    'test-results/**/*',
+    '.playwright/**/*',
   ]),
   {
     extends: compat.extends('plugin:prettier/recommended'),
