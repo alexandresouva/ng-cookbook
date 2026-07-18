@@ -49,4 +49,9 @@ Thumbs.db
 /temp_pr_body.md
 /.agents/sdd/
 
+# Playwright
+/playwright-report/
+/test-results/
+/.playwright/
+
 
