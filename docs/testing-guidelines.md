@@ -350,3 +350,19 @@ export function createMockProductDto(overrides?: Partial<ProductDto>): ProductDt
   };
 }
 ```
+
+### 🔀 5. Modular MSW Handlers Layout
+
+To prevent the root `src/mocks/handlers.ts` file from becoming a monolith and to avoid Git merge conflicts, we modularize API mock handlers by feature:
+
+1. **Feature Handlers**: Create domain-specific handler arrays in subfolders (e.g. `src/mocks/handlers/products.ts`).
+2. **Aggregation**: Merge all feature handler arrays into the central array in `src/mocks/handlers.ts` using the spread operator (`...`).
+
+**Example central file (`src/mocks/handlers.ts`):**
+
+```typescript
+import { productsHandlers } from './handlers/products';
+import { usersHandlers } from './handlers/users';
+
+export const handlers = [...productsHandlers, ...usersHandlers];
+```
