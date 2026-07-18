@@ -366,3 +366,122 @@ import { usersHandlers } from './handlers/users';
 
 export const handlers = [...productsHandlers, ...usersHandlers];
 ```
+
+---
+
+## 7. End-to-End (E2E) Testing Guidelines (Playwright)
+
+We use **Playwright** for E2E tests, organizing them under the `e2e/` folder. We follow the Page Object Model (POM) configured with Playwright Fixtures.
+
+### 🧱 1. Page Object Model (POM) via Fixtures
+
+To avoid repeating selector declarations and setup boilerplate in test files:
+
+1. Define page objects in `e2e/page-objects/` mapping locators and visual methods.
+2. Register page objects as custom fixtures in `e2e/fixtures/e2e-fixtures.ts`.
+3. Inject the fixture arguments directly in tests (do NOT call `new PageObject()` inside specs).
+
+**Example Page Object (`e2e/page-objects/login.po.ts`):**
+
+```typescript
+import { Locator, Page } from '@playwright/test';
+
+export class LoginPageObject {
+  readonly emailInput: Locator;
+  readonly submitButton: Locator;
+
+  constructor(private readonly page: Page) {
+    this.emailInput = page.getByLabel('E-mail');
+    this.submitButton = page.getByRole('button', { name: /entrar/i });
+  }
+
+  async login(email: string): Promise<void> {
+    await this.emailInput.fill(email);
+    await this.submitButton.click();
+  }
+}
+```
+
+**Example Fixtures configuration (`e2e/fixtures/e2e-fixtures.ts`):**
+
+```typescript
+import { test as base } from '@playwright/test';
+import { LoginPageObject } from '../page-objects/login.po';
+
+type E2EFixtures = {
+  loginPage: LoginPageObject;
+};
+
+export const test = base.extend<E2EFixtures>({
+  loginPage: async ({ page }, use) => {
+    const loginPage = new LoginPageObject(page);
+    await use(loginPage);
+  },
+});
+
+export { expect } from '@playwright/test';
+```
+
+**Example Spec file (`e2e/specs/auth.spec.ts`):**
+
+```typescript
+import { test, expect } from '../fixtures/e2e-fixtures';
+
+test('should login successfully', async ({ page, loginPage }) => {
+  await page.goto('/login');
+  await loginPage.login('user@example.com');
+  await expect(page).toHaveURL('/dashboard');
+});
+```
+
+### 🎯 2. Hybrid Locator Strategy
+
+To ensure accessible markup while maintaining test stability, follow this priority queue for locating elements:
+
+- **Priority 1 (Semantic/Access Role)**: Use `getByRole()`, `getByLabel()`, or `getByText()` first. This guarantees the page is accessible.
+- **Priority 2 (Stability Test IDs)**: Use `getByTestId()` (e.g. `<tr data-testid="row-123">`) for dynamic lists, grid tables, icon-only buttons, or layouts with volatile content.
+
+### 🌐 3. Network Mocking in E2E
+
+For mocked E2E flows, intercept requests inside the browser using Playwright's native `page.route()`. Always import and use the shared mock factories under `@testing/factories/` to maintain consistent payloads:
+
+```typescript
+import { test } from '../fixtures/e2e-fixtures';
+import { createMockProductDto } from '../../src/app/testing/factories/products.factory';
+
+test('should load mocked items', async ({ page, productsPage }) => {
+  await page.route('**/api/products', async (route) => {
+    const data = [createMockProductDto({ title: 'Playwright Mock' })];
+    await route.fulfill({ json: data });
+  });
+
+  await page.goto('/products');
+  // assert UI displays mock title...
+});
+```
+
+### 🚀 4. How to Run E2E Tests
+
+#### Setup on First Execution
+
+If Chrome is already installed on your system, you can skip this step.
+
+Before running the E2E tests for the first time, you must download the isolated Chromium engine:
+
+```bash
+npx playwright install chromium
+```
+
+_(Note: Playwright will download a standalone Chromium binary into its local cache. You do NOT need to install Google Chrome on your operating system)._
+
+#### Running Tests
+
+After the initial browser installation, you can run the test suite:
+
+- Run tests in headless mode: `npm run e2e`
+- Run tests in interactive UI Mode: `npm run e2e:ui`
+- Run tests in step-by-step debug mode: `npm run e2e:debug`
+
+```
+
+```

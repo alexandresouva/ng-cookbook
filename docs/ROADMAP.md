@@ -72,8 +72,8 @@ _Status: Concluído. Detalhamento completo do fluxo disponível em [docs/agentic
 - [x] **Testes Unitários** (Vitest)
 - [x] **Políticas de Cobertura (Coverage Thresholds)**
 - [x] **Testes de Componentes / Integração local**
-- [ ] **Testes End-to-End (E2E)** (Playwright ou Cypress)
-- [ ] **Testes de Acessibilidade (a11y)** (Integração do Axe-core nos testes e validação ARIA)
+- [x] **Testes End-to-End (E2E)** (Playwright ou Cypress)
+- [x] **Testes de Acessibilidade (a11y)** (Integração do Axe-core nos testes e validação ARIA)
 - [x] **Estratégia de Mocking de APIs** (MSW - Mock Service Worker para desenvolvimento offline e consistência nos testes)
 
 _Status: Parcialmente implementado (Testes Unitários, Componentes e Políticas de Cobertura concluídos)._

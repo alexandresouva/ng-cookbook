@@ -71,7 +71,12 @@ export default defineConfig([
     ),
     languageOptions: {
       parserOptions: {
-        project: ['tsconfig.json', 'tsconfig.app.json', 'tsconfig.spec.json'],
+        project: [
+          'tsconfig.json',
+          'tsconfig.app.json',
+          'tsconfig.spec.json',
+          'e2e/tsconfig.e2e.json',
+        ],
         createDefaultProgram: true,
       },
     },
@@ -220,7 +225,12 @@ export default defineConfig([
       'import/resolver': {
         typescript: {
           alwaysTryTypes: true,
-          project: ['tsconfig.json', 'tsconfig.app.json', 'tsconfig.spec.json'],
+          project: [
+            'tsconfig.json',
+            'tsconfig.app.json',
+            'tsconfig.spec.json',
+            'e2e/tsconfig.e2e.json',
+          ],
           noWarnOnMultipleProjects: true,
         },
       },
