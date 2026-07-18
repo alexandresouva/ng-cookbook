@@ -84,7 +84,7 @@ To avoid duplicating mock structures between DTOs (Data Transfer Objects) and Do
 
 ### Example
 
-```typescript
+````typescript
 import { Product } from '../models/product.model';
 import { ProductDto } from '../models/product.dto';
 import { ProductMapper } from '../data-access/products.mapper';
@@ -116,4 +116,138 @@ export function createMockProduct(overrides?: Partial<Product>): Product {
     ...overrides,
   };
 }
+
+---
+
+## 4. Component & Local Integration Testing Guidelines (TestHelper)
+
+Component testing verifies that the component class and template interact correctly. To prevent boilerplate DOM queries and handle typings safely, use the **`TestHelper`** class from `@testing/test-helper/test-helper`.
+
+### Component Types and Testing Focus
+
+Before writing component tests, identify the component's category:
+
+#### Smart Components (Pages / Container Components)
+- **Rule**: Smart components must only interact with their corresponding Facade.
+- **Testing Goal**: Verify that the component displays loading/error states from the Facade, renders lists/details, and delegates user actions to the Facade methods.
+- **Mocking**: Always mock the Facade using `vi.fn()` or plain mock objects, and provide it in `TestBed`.
+
+#### Dumb Components (Shared / UI Components)
+- **Rule**: Dumb components do not inject services. They communicate purely via `input()` and `output()`.
+- **Testing Goal**: Verify that inputs render properly and outputs emit correct events on user action.
+
+### Why use `TestHelper`?
+- **Standardized Queries**: Access elements consistently using `queries.query('testid')` (always targets `[data-testid="..."]`).
+- **Trigger vs. Dispatch**:
+  - `trigger`: Emulates Angular event binding handlers directly using `triggerEventHandler` (fast, isolated unit testing).
+  - `dispatch`: Dispatches real DOM events like `MouseEvent` or `InputEvent` (required when testing HostListeners, event bubbling, or focus).
+- **Type Safety**: Automatically casts native elements and component instances.
+
+### Example: Testing a Smart Component
+
+```typescript
+import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
+import { signal } from '@angular/core';
+import { of } from 'rxjs';
+
+import { TestHelper } from '@testing/test-helper/test-helper';
+import { ProductsPage } from './products.page';
+import { ProductsFacade } from '../data-access/products.facade';
+
+function setup() {
+  const mockFacade = {
+    products: signal([{ id: '1', name: 'Product A', price: 10 }]),
+    loading: signal(false),
+    loadProducts: vi.fn(),
+  };
+
+  TestBed.configureTestingModule({
+    imports: [ProductsPage],
+    providers: [
+      { provide: ProductsFacade, useValue: mockFacade }
+    ]
+  });
+
+  const fixture = TestBed.createComponent(ProductsPage);
+  const component = fixture.componentInstance;
+  const helper = new TestHelper(fixture);
+
+  return { fixture, component, mockFacade, helper };
+}
+
+describe('ProductsPage', () => {
+  it('should call loadProducts on facade on init', () => {
+    const { mockFacade } = setup();
+    expect(mockFacade.loadProducts).toHaveBeenCalled();
+  });
+
+  it('should render products list using TestHelper queries', () => {
+    const { fixture, helper } = setup();
+    fixture.detectChanges(); // Trigger template bindings
+
+    const items = helper.queries.queryAll('product-item');
+    expect(items.length).toBe(1);
+    expect(helper.queries.getTextContent('product-name')).toBe('Product A');
+  });
+
+  it('should display spinner when facade loading state is active', () => {
+    const { fixture, mockFacade, helper } = setup();
+    mockFacade.loading.set(true);
+    fixture.detectChanges();
+
+    const spinner = helper.queries.query('loading-spinner');
+    expect(spinner).toBeTruthy();
+  });
+});
+````
+
+### Example: Testing a Dumb Component
+
+```typescript
+import { TestBed } from '@angular/core/testing';
+import { TestHelper } from '@testing/test-helper/test-helper';
+import { ProductCard } from './product-card.component';
+
+function setup() {
+  TestBed.configureTestingModule({
+    imports: [ProductCard],
+  });
+
+  const fixture = TestBed.createComponent(ProductCard);
+  const component = fixture.componentInstance;
+  const helper = new TestHelper(fixture);
+
+  return { fixture, component, helper };
+}
+
+describe('ProductCard', () => {
+  it('should render signal input values', () => {
+    const { fixture, helper } = setup();
+
+    // Set Angular signal input
+    fixture.componentRef.setInput('product', { name: 'Dumb Product', price: 15 });
+    fixture.detectChanges();
+
+    expect(helper.queries.getTextContent('product-title')).toBe('Dumb Product');
+  });
+
+  it('should emit select output when clicked', () => {
+    const { fixture, component, helper } = setup();
+    fixture.componentRef.setInput('product', { id: '123', name: 'Dumb Product' });
+    fixture.detectChanges();
+
+    let emittedId: string | null = null;
+    component.select.subscribe((id) => (emittedId = id));
+
+    // Simple event trigger using helper
+    helper.trigger.click('select-btn');
+
+    expect(emittedId).toBe('123');
+  });
+});
+```
+
+```
+
 ```

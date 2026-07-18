@@ -7,3 +7,7 @@ Always follow these rules when writing or refactoring unit tests:
 3. **DTO-to-Domain Mock Pattern**: Use the centralized mock builders (`*.mock.ts`) located in the feature's `testing/` folder. When writing domain model mocks, map them from their corresponding mock DTOs using Mapper classes to guarantee consistency.
 4. **Coverage Exclusions**: Exclude all mock files (`**/*.mock.ts`) and raw schemas from coverage mapping.
 5. **Quality Gate Threshold**: Guarantee a code coverage of at least 90% across the changes. Run `rtk npm run test` to verify.
+6. **Component & Integration Testing Rules**:
+   - Use the unified `TestHelper` class from `@testing/test-helper/test-helper` to query, trigger, and dispatch actions in component tests. Always target `data-testid` attributes in HTML templates for element selection.
+   - Smart components must only have their Facades mocked. Never mock internal Stores/APIs inside a page test.
+   - Dumb components must be tested using `fixture.componentRef.setInput()` for signal inputs and subscribing to `output()` emitters.

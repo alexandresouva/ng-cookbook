@@ -69,14 +69,14 @@ _Status: Concluído. Detalhamento completo do fluxo disponível em [docs/agentic
 
 ### 🔴 Fase 3: Estrutura de Testes Automatizados, Acessibilidade (a11y) & Mocks (Branch `main`)
 
-- [ ] **Testes Unitários** (Vitest)
-- [ ] **Testes de Componentes / Integração local**
+- [x] **Testes Unitários** (Vitest)
+- [x] **Políticas de Cobertura (Coverage Thresholds)**
+- [x] **Testes de Componentes / Integração local**
 - [ ] **Testes End-to-End (E2E)** (Playwright ou Cypress)
 - [ ] **Testes de Acessibilidade (a11y)** (Integração do Axe-core nos testes e validação ARIA)
-- [ ] **Políticas de Cobertura (Coverage Thresholds)**
 - [ ] **Estratégia de Mocking de APIs** (MSW - Mock Service Worker para desenvolvimento offline e consistência nos testes)
 
-_Status: Pendente de discussão._
+_Status: Parcialmente implementado (Testes Unitários, Componentes e Políticas de Cobertura concluídos)._
 
 ---
 
