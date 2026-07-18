@@ -303,3 +303,66 @@ it('should have no accessibility violations except known color contrast bugs', a
   expect(results).toHaveNoViolations();
 });
 ```
+
+---
+
+## 6. API Mocking & Offline Development Guidelines
+
+To build robust, decoupled, and consistent components, we follow a split API mocking strategy depending on the environment.
+
+### 🌐 1. Development Mocking (MSW - Mock Service Worker)
+
+For local browser development, prototyping, and offline usage:
+
+- We use **MSW** to intercept network calls at the browser's Service Worker level.
+- Run the command `npm run start:offline` to start the development server with mock API interception enabled.
+- MSW is configured under `src/mocks/` and imports mock data factories from `@testing/factories/`.
+
+### 🧪 2. Unit Testing Mocking (Vitest)
+
+For unit tests (`*.spec.ts`):
+
+- **Do NOT use MSW**. Keeping tests fast and simple is our highest priority.
+- Mock the network using standard Angular testing tools like `HttpClientTestingModule` or simple spies on the API client classes.
+- Use the same mock factories from `@testing/factories/` in your unit tests to populate your mock responses (e.g. `mockProductsApi.getProducts.mockReturnValue(of([createMockProduct()]))`).
+
+### 🤖 3. End-to-End Testing Mocking (Playwright/Cypress)
+
+For high-level user interface flow tests:
+
+- **Do NOT use MSW**. Use the test runner's native network interception tools (e.g., `page.route()` in Playwright or `cy.intercept()` in Cypress).
+- Feed the native E2E mock routes using the shared mock factories under `@testing/factories/` to maintain a single source of truth for mock payloads.
+
+### 📦 4. Centralized Mock Factories (`@testing/factories/`)
+
+All mock data structures must be generated via factories defined under `@testing/factories/`. Never write raw JSON objects directly in spec files or handlers:
+
+```typescript
+// src/app/testing/factories/products.factory.ts
+import { ProductDto } from '../../features/products/models/product.dto';
+
+export function createMockProductDto(overrides?: Partial<ProductDto>): ProductDto {
+  return {
+    id: '1',
+    title: 'Angular Cookbook',
+    price: 89.9,
+    ...overrides,
+  };
+}
+```
+
+### 🔀 5. Modular MSW Handlers Layout
+
+To prevent the root `src/mocks/handlers.ts` file from becoming a monolith and to avoid Git merge conflicts, we modularize API mock handlers by feature:
+
+1. **Feature Handlers**: Create domain-specific handler arrays in subfolders (e.g. `src/mocks/handlers/products.ts`).
+2. **Aggregation**: Merge all feature handler arrays into the central array in `src/mocks/handlers.ts` using the spread operator (`...`).
+
+**Example central file (`src/mocks/handlers.ts`):**
+
+```typescript
+import { productsHandlers } from './handlers/products';
+import { usersHandlers } from './handlers/users';
+
+export const handlers = [...productsHandlers, ...usersHandlers];
+```
