@@ -63,8 +63,6 @@ graph TD
 
 - [x] **Integração de Agentes e IA**: Definição e automação do ciclo de desenvolvimento assistido por agentes (Issue Creator, SDD Generator, Code Builder e PR Submitter com revisão humana).
 
-_Status: Concluído. Detalhamento completo do fluxo disponível em [docs/agentic-sdlc.md](file:///Users/alexandre/Desktop/playground/ng-cookbook/docs/agentic-sdlc.md)._
-
 ---
 
 ### 🔴 Fase 3: Estrutura de Testes Automatizados, Acessibilidade (a11y) & Mocks (Branch `main`)
@@ -75,8 +73,6 @@ _Status: Concluído. Detalhamento completo do fluxo disponível em [docs/agentic
 - [x] **Testes End-to-End (E2E)** (Playwright ou Cypress)
 - [x] **Testes de Acessibilidade (a11y)** (Integração do Axe-core nos testes e validação ARIA)
 - [x] **Estratégia de Mocking de APIs** (MSW - Mock Service Worker para desenvolvimento offline e consistência nos testes)
-
-_Status: Parcialmente implementado (Testes Unitários, Componentes e Políticas de Cobertura concluídos)._
 
 ---
 
@@ -94,7 +90,7 @@ _Status: Parcialmente implementado (Testes Unitários, Componentes e Políticas 
   - [ ] Integração de Observabilidade (Sentry/LogRocket) e Global Error Handler.
 - **Fase 6: Conteinerização, CI/CD & Deploy AWS**
   - [ ] Dockerfile otimizado para build de SPA estática ou SSR único.
-  - [ ] Pipeline GitHub Actions (Linter, Testes, Build).
+  - [ ] Pipeline GitHub Actions (Linter, Testes, Build, LHCI Server).
   - [ ] Deploy AWS (S3 + CloudFront para SPA ou App Runner para SSR).
 
 ---
@@ -129,10 +125,3 @@ _Status: Parcialmente implementado (Testes Unitários, Componentes e Políticas 
   - [ ] Docker Compose completo para rodar a malha de MFEs localmente.
   - [ ] CI/CD com deploys independentes por MFE.
   - [ ] Deploy na AWS com buckets S3 e distribuições CloudFront isolados por remote.
-
----
-
-## 🛠️ Como Iniciar
-
-1. Comece alinhando os objetivos da **Fase 1** na branch `main`.
-2. Conforme discutirmos cada tópico, avançaremos na implementação passo a passo.
