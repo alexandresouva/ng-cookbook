@@ -199,6 +199,11 @@ export default defineConfig([
           capture: ['featureName'],
         },
         {
+          type: 'feature-application',
+          pattern: 'src/app/features/*/application',
+          capture: ['featureName'],
+        },
+        {
           type: 'feature-domain',
           pattern: 'src/app/features/*/domain',
           capture: ['featureName'],
@@ -218,6 +223,7 @@ export default defineConfig([
       ],
       'boundaries/entry-points': [
         { type: 'feature-data-access', pattern: 'index.ts' },
+        { type: 'feature-application', pattern: 'index.ts' },
         { type: 'feature-models', pattern: 'index.ts' },
       ],
       'boundaries/ignore': [
@@ -246,6 +252,10 @@ export default defineConfig([
           policies: [
             {
               target: { element: { type: 'feature-data-access' } },
+              allow: 'index.ts',
+            },
+            {
+              target: { element: { type: 'feature-application' } },
               allow: 'index.ts',
             },
             {
@@ -278,6 +288,14 @@ export default defineConfig([
                   to: {
                     element: {
                       type: 'feature-components',
+                      captured: { featureName: '{{from.captured.featureName}}' },
+                    },
+                  },
+                },
+                {
+                  to: {
+                    element: {
+                      type: 'feature-application',
                       captured: { featureName: '{{from.captured.featureName}}' },
                     },
                   },
@@ -355,6 +373,38 @@ export default defineConfig([
                 },
               ],
             },
+            // Boundaries for Application layer
+            {
+              from: { element: { type: 'feature-application' } },
+              allow: [
+                { to: { element: { type: 'core' } } },
+                { to: { element: { type: 'shared' } } },
+                {
+                  to: {
+                    element: {
+                      type: 'feature-models',
+                      captured: { featureName: '{{from.captured.featureName}}' },
+                    },
+                  },
+                },
+                {
+                  to: {
+                    element: {
+                      type: 'feature-domain',
+                      captured: { featureName: '{{from.captured.featureName}}' },
+                    },
+                  },
+                },
+                {
+                  to: {
+                    element: {
+                      type: 'feature-data-access',
+                      captured: { featureName: '{{from.captured.featureName}}' },
+                    },
+                  },
+                },
+              ],
+            },
             // Boundaries for Domain layer
             {
               from: { element: { type: 'feature-domain' } },
@@ -399,6 +449,22 @@ export default defineConfig([
                   to: {
                     element: {
                       type: 'feature-domain',
+                      captured: { featureName: '{{from.captured.featureName}}' },
+                    },
+                  },
+                },
+                {
+                  to: {
+                    element: {
+                      type: 'feature-application',
+                      captured: { featureName: '{{from.captured.featureName}}' },
+                    },
+                  },
+                },
+                {
+                  to: {
+                    element: {
+                      type: 'feature-models',
                       captured: { featureName: '{{from.captured.featureName}}' },
                     },
                   },

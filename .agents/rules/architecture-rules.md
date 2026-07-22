@@ -5,23 +5,24 @@ Cross-reference: `docs/architecture.md`
 
 ---
 
-## ⚡ Progressive Architecture (KISS)
+## ⚡ Unified Feature Architecture
 
-Features should scale dynamically based on their complexity:
+All features must follow a consistent, decoupled structure:
 
-1. **Level 1 (Pragmatic / Unified - Default)**:
-   - For simple CRUD or straight data listings.
-   - Folder structure:
-     - `models/`: Domain models and DTO validation schemas.
-     - `data-access/`: API, Store, Mapper, and Facade all live together.
-   - All business logic goes in `<feature>.service.ts` inside `data-access/`.
-
-2. **Level 2 (Strict DDD / Separated - Complex Features)**:
-   - For features with rich business calculations, async flows, or heavy rules (e.g. cart, checkout, payments).
-   - Folder structure:
-     - `domain/`: Pure business models (`.model.ts`) and pure business logic services (`.service.ts`). Absolutely NO dependency on Angular DI, HttpClient, or stores.
-     - `data-access/`: Technical infrastructure: API (`.api.ts`), Store (`.store.ts`), Mapper (`.mapper.ts`), and Facade (`.facade.ts`).
-     - DTO validation schemas (`.dto.ts`) are kept private inside `data-access/` and never exported.
+1. **`domain/`**:
+   - Core entities/models (`.model.ts`) and pure business logic services (`.service.ts`).
+   - **100% pure**: Absolutely NO dependencies on Angular, HTTP clients, or state libraries.
+2. **`data-access/`**:
+   - Strictly deals with network I/O and data transformations: API client (`.api.ts`), private validation schemas (`.dto.ts`), and translation (`.mapper.ts`).
+   - Does not contain stores, state, or orchestrators.
+3. **`application/`**:
+   - Framework orchestration and state management: Signal Store (`.store.ts`) and Facade (`.facade.ts`).
+   - Coordinates API calls and applies pure domain rules.
+   - _index.ts_: Exports ONLY the Facade.
+4. **`ui/`**:
+   - Presentation components ("dumb" components) with no framework injectables.
+5. **`pages/`**:
+   - Smart components / route targets that inject only the Facade.
 
 ---
 
@@ -32,17 +33,17 @@ Features should scale dynamically based on their complexity:
 - New **reusable pure function** → `src/app/shared/utils/`
 - New **business feature** → `src/app/features/<feature-name>/`
 - New **route target component** → `src/app/features/<feature-name>/pages/<page-name>/`
-- New **feature-specific UI component** → `src/app/features/<feature-name>/components/<component-name>/`
+- New **feature-specific UI component** → `src/app/features/<feature-name>/ui/components/<component-name>/`
 
 ---
 
 ## File Naming Rules
 
-- HTTP service file: `<feature>.api.ts` (never `<feature>.service.ts` for HTTP)
+- HTTP service file: `<feature>.api.ts`
 - Domain logic file: `<feature>.service.ts`
 - State file: `<feature>.store.ts`
 - DTO-to-model transformer: `<feature>.mapper.ts`
-- Orchestrator for components: `<feature>.facade.ts`
+- Orchestrator/Facade: `<feature>.facade.ts`
 - Domain interface: `<entity>.model.ts`
 - API response shape: `<entity>.dto.ts`
 - Route target component: `<page-name>.page.ts` (inside `pages/`)
@@ -55,7 +56,7 @@ Features should scale dynamically based on their complexity:
 - `core/` NEVER imports from `features/`
 - `shared/` NEVER imports from `core/` or `features/`
 - `features/A/` NEVER imports directly from `features/B/` — cross-feature communication goes through `core/` services or events
-- Inside a feature, components NEVER inject `.api.ts`, `.store.ts`, or `.service.ts` directly — always inject `.facade.ts`
+- Inside a feature, components/pages NEVER inject `.api.ts` or `.store.ts` directly — always inject the Facade from `application/`
 - DTOs (`.dto.ts`) NEVER leave `data-access/` — the mapper runs inside `.api.ts`
 
 ---
@@ -74,7 +75,7 @@ Features should scale dynamically based on their complexity:
 - All components MUST be `standalone: true`
 - No `NgModule` usage
 - Smart components (pages): inject only the Facade via `inject()`
-- Dumb components (components/): receive data via `input()`, emit via `output()` — never inject services
+- Dumb components (ui/): receive data via `input()`, emit via `output()` — never inject services
 - Use `input.required<T>()` for mandatory inputs
 - Use Angular control flow (`@if`, `@for`, `@switch`) — never `*ngIf` or `*ngFor`
 
@@ -86,12 +87,12 @@ Features should scale dynamically based on their complexity:
 - Private writable signals: `private readonly _state = signal<T>(initial)`
 - Public readonly signals: `readonly state = this._state.asReadonly()`
 - Derived state: `computed(() => ...)`
-- Store is provided at the page level (`providers: [FeatureStore]`) — never `providedIn: 'root'` unless truly global
+- Store is provided at the page level (`providers: [FeatureStore]`)
 
 ---
 
 ## index.ts Rules
 
-- Every `data-access/` folder MUST have an `index.ts`
-- `index.ts` exports ONLY the Facade — never the Store, Api, Mapper, or DTO
-- Every `models/` folder MUST have an `index.ts` exporting model interfaces (never DTOs)
+- Every `data-access/` folder MUST have an `index.ts` exporting only the API client.
+- Every `application/` folder MUST have an `index.ts` exporting ONLY the Facade.
+- Every `domain/` folder MUST have an `index.ts` exporting only model interfaces.

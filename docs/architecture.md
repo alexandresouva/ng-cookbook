@@ -63,56 +63,32 @@ shared/
 
 ## 🚀 `features/` — Business Domains (Lazy-Loaded)
 
-Each feature is a self-contained domain. To follow the **KISS (Keep It Simple, Stupid)** principle, we adopt a **Progressive Architecture** that scales based on the feature's business complexity.
+All features must follow a unified structure to ensure consistency, clean boundary checks, and framework independence of our domain rules.
 
-### ⚡ Feature Scaling Levels
-
-#### Level 1: Pragmatic / Unified (Default / Simple Features)
-
-For CRUD features, simple lists, or features with basic front-end rules:
-
-- **`models/`**: Holds models (`.model.ts`) and DTO schemas (`.dto.ts`).
-- **`data-access/`**: Groups all non-visual components together (`.api.ts`, `.store.ts`, `.mapper.ts`, `.service.ts`, `.facade.ts`).
-- **`pages/` & `components/`**: Smart and dumb components.
-
-Example (Products feature):
+### ⚡ Feature Structure Layout
 
 ```text
 features/products/
-├── data-access/
-│   ├── products.api.ts      # HTTP Client
-│   ├── products.store.ts    # Signal State
-│   ├── products.mapper.ts   # ProductDto -> Product
-│   ├── products.service.ts  # Rules & Calculations
-│   ├── products.facade.ts   # Orchestrator
-│   └── index.ts             # Exports ONLY ProductsFacade
-├── models/
-│   ├── product.dto.ts       # Raw response schema (Zod)
-│   ├── product.model.ts     # Domain model
-│   └── index.ts             # Exports ONLY product.model
-```
-
-#### Level 2: Strict DDD / Separated (Complex Features)
-
-Upgrade to this structure when a feature has highly complex rules, async workflows, heavy domain calculations, or needs 100% isolated business unit testing (e.g. cart, checkout, payments):
-
-- **`domain/`**: Houses pure business model interfaces and pure business logic services. It has **zero dependencies** on Angular, HTTP clients, or stores.
-- **`data-access/`**: Houses all technical infrastructure (API, Store, Mapper, Facade) and private DTO schemas. No root-level `models/` directory is needed.
-
-Example (Cart feature):
-
-```text
-features/cart/
 ├── domain/                  # Pure Business Logic Layer
-│   ├── cart.model.ts        # Domain models (Cart, CartItem)
-│   └── cart.service.ts      # Pure domain services (discount rules, limits)
-├── data-access/             # Technical Infrastructure Layer
-│   ├── cart.api.ts          # HTTP sync client
-│   ├── cart.dto.ts          # Private DTO schema (Zod)
-│   ├── cart.mapper.ts       # CartDto -> Cart Mapper
-│   ├── cart.store.ts        # Signal State
-│   ├── cart.facade.ts       # Orchestrates domain/ & data-access/
-│   └── index.ts             # Exports ONLY CartFacade
+│   ├── product.model.ts     # Domain models
+│   ├── product.service.ts   # Pure domain services (validation rules, calculations)
+│   └── index.ts             # Exports ONLY domain models
+├── data-access/             # Technical Infrastructure (I/O)
+│   ├── products.api.ts      # HTTP Client
+│   ├── product.dto.ts       # Private Zod DTO schema
+│   └── products.mapper.ts   # DTO -> Model Mapper
+├── application/             # State & Orchestration Layer
+│   ├── products.store.ts    # Signal State
+│   ├── products.facade.ts   # Orchestrator / Use Cases Facade
+│   └── index.ts             # Exports ONLY ProductsFacade
+├── ui/                      # Dumb presentation components
+│   └── components/
+│       └── product-card/
+└── pages/                   # Smart page components / Routing targets
+    ├── products.routes.ts
+    └── product-list/
+        ├── product-list.page.ts
+        └── product-list.page.html
 ```
 
 ### When to Split into Sub-Features
@@ -128,8 +104,8 @@ For extremely large modules, split the domain when a feature exceeds ~3 pages **
 | `.api.ts`     | HTTP service — communicates with the API, returns domain models | `products.api.ts`      |
 | `.mapper.ts`  | Transforms DTO → domain model (Anti-Corruption Layer)           | `products.mapper.ts`   |
 | `.store.ts`   | Reactive state container (Angular Signals)                      | `products.store.ts`    |
-| `.service.ts` | Frontend domain logic (pure business rules, no HTTP)            | `products.service.ts`  |
-| `.facade.ts`  | Orchestrator — single entry point for components                | `products.facade.ts`   |
+| `.service.ts` | Pure frontend domain logic (business rules, no HTTP, no DI)     | `products.service.ts`  |
+| `.facade.ts`  | Orchestrator — single entry point for pages                     | `products.facade.ts`   |
 | `.model.ts`   | Domain interface/type                                           | `product.model.ts`     |
 | `.dto.ts`     | API response shape (never leaves `data-access/`)                | `product.dto.ts`       |
 | `.routes.ts`  | Feature route declarations                                      | `products.routes.ts`   |
@@ -141,32 +117,33 @@ For extremely large modules, split the domain when a feature exceeds ~3 pages **
 
 ### Facade Pattern
 
-Components **only** inject the Facade. They never inject the Store, Api, or Service directly.
+Pages **only** inject the Facade from `application/`. They never inject the Store or Api directly.
 
 ```
-Component → Facade → Store (state) + Api (HTTP) + Service (logic)
+Smart Component (Page) → Facade → Store (state) + Api (HTTP) + Domain (logic)
 ```
 
 ### Anti-Corruption Layer (ACL)
 
-DTOs never cross the `data-access/` boundary. The `.api.ts` applies the mapper before returning
+DTOs never cross the `data-access/` boundary. The API client applies the mapper before returning
 data — the rest of the app only knows domain models.
 
 ```
-API (ProductDTO) → .api.ts → .mapper.ts → Product → rest of the app
+API (ProductDTO) → .api.ts → .mapper.ts → Product (Domain) → rest of the app
 ```
 
 ---
 
 ## 📏 Dependency Rules
 
-| Layer                    | Can import                                                        | Cannot import            |
-| :----------------------- | :---------------------------------------------------------------- | :----------------------- |
-| `core/`                  | `shared/`                                                         | `features/`              |
-| `shared/`                | Nothing internal                                                  | `core/`, `features/`     |
-| `features/X/data-access` | `core/`, `shared/`, own `models/`                                 | Another feature          |
-| `features/X/pages`       | own `data-access` (via Facade only), own `components/`, `shared/` | Another feature          |
-| `features/X/components`  | `shared/`, own `models/`                                          | `data-access/`, `pages/` |
+| Layer                    | Can import                                            | Cannot import            |
+| :----------------------- | :---------------------------------------------------- | :----------------------- |
+| `core/`                  | `shared/`                                             | `features/`              |
+| `shared/`                | Nothing internal                                      | `core/`, `features/`     |
+| `features/X/data-access` | `core/`, `shared/`, own `domain/`                     | `application/`, another  |
+| `features/X/application` | `core/`, `shared/`, own `domain/`, own `data-access/` | `pages/`, another        |
+| `features/X/pages`       | own `application` (Facade only), own `ui/`, `shared/` | `data-access/`, another  |
+| `features/X/components`  | `shared/`, own `domain/`                              | `data-access/`, `pages/` |
 
 Enforced by `eslint-plugin-boundaries`. Violations cause `npm run lint` to fail.
 
