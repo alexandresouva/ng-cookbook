@@ -54,6 +54,24 @@ ng e2e
 
 Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
 
+## Running with Docker
+
+You can run the application inside a container using the custom Nginx server configuration:
+
+```bash
+# Build the Docker image
+docker build -t ng-cookbook:latest .
+
+# Run the container locally (available at http://localhost:8080)
+docker run -d -p 8080:80 --name ng-cookbook-app ng-cookbook:latest
+
+# Stop the container
+docker stop ng-cookbook-app
+
+# Remove the container
+docker rm ng-cookbook-app
+```
+
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
