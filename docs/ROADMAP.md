@@ -90,10 +90,10 @@ graph TD
   - [ ] Integração de Observabilidade (Sentry/LogRocket) e Global Error Handler.
 - **Fase 6: Deploy, CI/CD & Infraestrutura**
   - **Fase 6.1: Deploy Simples & Manual de SPA**
-    - [x] Criação manual de S3 Bucket Privado com bloqueio de acesso público.
-    - [x] Configuração manual de CDN CloudFront com Origin Access Control (OAC).
-    - [x] Configuração manual de páginas de erro 403/404 para roteamento SPA.
-    - [x] Build local (`npm run build`) e upload manual dos arquivos para o S3.
+    - [ ] Criação manual de S3 Bucket Privado com bloqueio de acesso público.
+    - [ ] Configuração manual de CDN CloudFront com Origin Access Control (OAC).
+    - [ ] Configuração manual de páginas de erro 403/404 para roteamento SPA.
+    - [ ] Build local (`npm run build`) e upload manual dos arquivos para o S3.
   - **Fase 6.2: Deploy Automatizado com IaC (Terraform) & CI/CD**
     - [ ] Criação de Pipeline GitHub Actions (Linter, Testes, Build, Deploy automático no S3 + Invalidação de Cache).
     - [ ] Escrita de arquivos Terraform (HCL) para provisionamento automatizado de S3 + CloudFront + OAC.
