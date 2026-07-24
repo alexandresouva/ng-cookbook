@@ -1,4 +1,4 @@
-name: CI/CD - Deploy SPA AWS
+name: CI/CD - Deploy SPA
 
 on:
   push:
@@ -7,15 +7,16 @@ on:
   pull_request:
     branches:
       - variation/standard-app
+  workflow_dispatch:
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  validate-and-build:
+  lint:
     runs-on: ubuntu-latest
-    name: Lint, Test and Build
+    name: Code Linting
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -32,14 +33,47 @@ jobs:
       - name: Run Linter
         run: npm run lint
 
+  test:
+    runs-on: ubuntu-latest
+    name: Unit Testing
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Run Unit Tests
         run: npm run test -- --watch=false --coverage
 
-      - name: Build Application (Production)
+  build:
+    runs-on: ubuntu-latest
+    name: Production Build
+    needs: [lint, test]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Application
         run: npm run build
 
       - name: Upload Build Artifacts
-        if: github.event_name == 'push' && github.ref == 'refs/heads/variation/standard-app'
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/variation/standard-app') || github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v7
         with:
           name: dist-files
@@ -48,9 +82,9 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    name: Deploy to AWS
-    needs: validate-and-build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/variation/standard-app'
+    name: Deploy Static Files
+    needs: build
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/variation/standard-app') || github.event_name == 'workflow_dispatch'
     steps:
       - name: Download Build Artifacts
         uses: actions/download-artifact@v8
