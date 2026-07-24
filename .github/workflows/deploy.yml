@@ -63,7 +63,6 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-2
-          audience: sigsv4
 
       - name: Sync files to S3 Bucket
         run: |
