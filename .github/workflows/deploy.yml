@@ -1,0 +1,78 @@
+name: CI/CD - Deploy SPA AWS
+
+on:
+  push:
+    branches:
+      - variation/standard-app
+  pull_request:
+    branches:
+      - variation/standard-app
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-latest
+    name: Lint, Test and Build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Linter
+        run: npm run lint
+
+      - name: Run Unit Tests
+        run: npm run test -- --watch=false --coverage
+
+      - name: Build Application (Production)
+        run: npm run build
+
+      - name: Upload Build Artifacts
+        if: github.event_name == 'push' && github.ref == 'refs/heads/variation/standard-app'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-files
+          path: dist/ng-cookbook/browser/
+          retention-days: 1
+
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to AWS
+    needs: validate-and-build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/variation/standard-app'
+    steps:
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-files
+          path: dist-files
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-2
+          audience: sigsv4
+
+      - name: Sync files to S3 Bucket
+        run: |
+          aws s3 sync dist-files/ s3://${{ secrets.AWS_S3_BUCKET }} --delete --cache-control "public, max-age=31536000, immutable"
+
+      - name: Update index.html Cache-Control Metadata
+        run: |
+          aws s3 cp s3://${{ secrets.AWS_S3_BUCKET }}/index.html s3://${{ secrets.AWS_S3_BUCKET }}/index.html --metadata-directive REPLACE --cache-control "public, max-age=0, s-maxage=86400, must-revalidate"
+
+      - name: Invalidate CloudFront Cache
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/index.html"
