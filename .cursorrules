@@ -1,0 +1,9 @@
+# Cursor Rules - ng-cookbook
+
+All rules and constraints are centralized in the `.agents/` folder. Please refer to these specific files for context:
+
+- **Rules Index**: [.agents/AGENTS.md](file:///./.agents/AGENTS.md)
+- **Command execution**: [.agents/rules/antigravity-rtk-rules.md](file:///./.agents/rules/antigravity-rtk-rules.md) *(You must prefix all terminal commands with `rtk`)*
+- **Angular & Signals**: [.agents/rules/architecture-rules.md](file:///./.agents/rules/architecture-rules.md)
+- **Zod, DTOs & Mappers**: [.agents/rules/zod-rules.md](file:///./.agents/rules/zod-rules.md)
+- **Vitest Testing**: [.agents/rules/testing-rules.md](file:///./.agents/rules/testing-rules.md)
