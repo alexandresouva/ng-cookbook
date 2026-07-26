@@ -17,8 +17,7 @@ jobs:
     outputs:
       release_version: ${{ steps.versioning.outputs.release_version }}
       deploy_path: ${{ steps.versioning.outputs.deploy_path }}
-      bucket_name: ${{ steps.versioning.outputs.bucket_name }}
-      cf_distribution_id: ${{ steps.versioning.outputs.cf_distribution_id }}
+      target_env: ${{ steps.versioning.outputs.target_env }}
     steps:
       - name: Determine and Validate Version
         id: versioning
@@ -69,12 +68,8 @@ jobs:
               # Define paths and environments based on Tag type (Release Candidate vs Stable)
               if [[ "$VERSION" =~ -rc ]]; then
                 TARGET_ENV="dev-uat"
-                BUCKET_NAME="${{ secrets.AWS_S3_BUCKET_DEV }}"
-                CF_DISTRIBUTION_ID="${{ secrets.CLOUDFRONT_DISTRIBUTION_ID_DEV }}"
               else
                 TARGET_ENV="prod"
-                BUCKET_NAME="${{ secrets.AWS_S3_BUCKET_PROD }}"
-                CF_DISTRIBUTION_ID="${{ secrets.CLOUDFRONT_DISTRIBUTION_ID_PROD }}"
 
                 # Validate Release Candidate prerequisite for stable production releases
                 echo "🔍 Validating matching Release Candidate tag prerequisite..."
@@ -90,22 +85,16 @@ jobs:
             else
               # Manual branch deployment (creates sandbox preview under dev-uat bucket using commit SHA)
               TARGET_ENV="dev-uat"
-              BUCKET_NAME="${{ secrets.AWS_S3_BUCKET_DEV }}"
-              CF_DISTRIBUTION_ID="${{ secrets.CLOUDFRONT_DISTRIBUTION_ID_DEV }}"
               DEPLOY_PATH="builds/from-branches/$VERSION"
             fi
           else
             TARGET_ENV=""
-            BUCKET_NAME=""
-            CF_DISTRIBUTION_ID=""
             DEPLOY_PATH=""
           fi
 
           echo "release_version=$VERSION" >> $GITHUB_OUTPUT
           echo "deploy_path=$DEPLOY_PATH" >> $GITHUB_OUTPUT
           echo "target_env=$TARGET_ENV" >> $GITHUB_OUTPUT
-          echo "bucket_name=$BUCKET_NAME" >> $GITHUB_OUTPUT
-          echo "cf_distribution_id=$CF_DISTRIBUTION_ID" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ github.token }}
 
@@ -164,13 +153,28 @@ jobs:
 
       - name: Sync files to S3 Bucket
         run: |
-          aws s3 sync dist-files/ s3://${{ needs.setup.outputs.bucket_name }}/${{ needs.setup.outputs.deploy_path }}/ --cache-control "public, max-age=31536000, immutable"
+          if [ "${{ needs.setup.outputs.target_env }}" = "prod" ]; then
+            BUCKET_NAME="${{ secrets.AWS_S3_BUCKET_PROD }}"
+          else
+            BUCKET_NAME="${{ secrets.AWS_S3_BUCKET_DEV }}"
+          fi
+          aws s3 sync dist-files/ s3://$BUCKET_NAME/${{ needs.setup.outputs.deploy_path }}/ --cache-control "public, max-age=31536000, immutable"
 
       - name: Update index.html Cache-Control Metadata
         run: |
-          aws s3 cp s3://${{ needs.setup.outputs.bucket_name }}/${{ needs.setup.outputs.deploy_path }}/index.html s3://${{ needs.setup.outputs.bucket_name }}/index.html --metadata-directive REPLACE --cache-control "public, max-age=0, s-maxage=86400, must-revalidate"
+          if [ "${{ needs.setup.outputs.target_env }}" = "prod" ]; then
+            BUCKET_NAME="${{ secrets.AWS_S3_BUCKET_PROD }}"
+          else
+            BUCKET_NAME="${{ secrets.AWS_S3_BUCKET_DEV }}"
+          fi
+          aws s3 cp s3://$BUCKET_NAME/${{ needs.setup.outputs.deploy_path }}/index.html s3://$BUCKET_NAME/index.html --metadata-directive REPLACE --cache-control "public, max-age=0, s-maxage=86400, must-revalidate"
 
       - name: Invalidate CloudFront Cache
         run: |
-          aws cloudfront create-invalidation --distribution-id ${{ needs.setup.outputs.cf_distribution_id }} --paths "/index.html"
+          if [ "${{ needs.setup.outputs.target_env }}" = "prod" ]; then
+            DIST_ID="${{ secrets.CLOUDFRONT_DISTRIBUTION_ID_PROD }}"
+          else
+            DIST_ID="${{ secrets.CLOUDFRONT_DISTRIBUTION_ID_DEV }}"
+          fi
+          aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/index.html"
 
