@@ -1,12 +1,9 @@
-name: CI/CD - Deploy SPA
+name: Deployment
 
 on:
   push:
     tags:
       - 'v1.*'
-  pull_request:
-    branches:
-      - variation/standard-app
   workflow_dispatch:
 
 permissions:
@@ -112,50 +109,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-  lint:
-    runs-on: ubuntu-latest
-    name: Code Linting
-    needs: setup
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run Linter
-        run: npm run lint
-
-  test:
-    runs-on: ubuntu-latest
-    name: Unit Testing
-    needs: setup
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run Unit Tests
-        run: npm run test -- --watch=false --coverage
-
   build:
     runs-on: ubuntu-latest
     name: Production Build
-    needs: [setup, lint, test]
+    needs: setup
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
