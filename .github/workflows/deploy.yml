@@ -3,17 +3,11 @@ name: CI/CD - Deploy SPA
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
-      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+      - 'v1.*'
   pull_request:
     branches:
       - variation/standard-app
   workflow_dispatch:
-    inputs:
-      release_version:
-        description: 'Versão para o deploy (Ex: v1.0.0-rc.1). Se vazio, a pipeline tentará usar a Tag selecionada.'
-        required: false
-        default: ''
 
 permissions:
   id-token: write
@@ -25,58 +19,96 @@ jobs:
     name: Validate Version
     outputs:
       release_version: ${{ steps.versioning.outputs.release_version }}
+      deploy_path: ${{ steps.versioning.outputs.deploy_path }}
+      bucket_name: ${{ steps.versioning.outputs.bucket_name }}
+      cf_distribution_id: ${{ steps.versioning.outputs.cf_distribution_id }}
     steps:
       - name: Determine and Validate Version
         id: versioning
         run: |
-          # 1. Determinar versão
+          # 1. Determine version and trigger type
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION="${{ github.event.inputs.release_version }}"
-            if [ -z "$VERSION" ]; then
-              if [ "${{ github.ref_type }}" = "tag" ]; then
-                VERSION="${{ github.ref_name }}"
-              else
-                echo "❌ Erro: Deploy manual exige especificar uma versão (ex: v1.0.0) ou selecionar uma Tag Git no menu."
-                exit 1
-              fi
+            if [ "${{ github.ref_type }}" = "tag" ]; then
+              VERSION="${{ github.ref_name }}"
+              REF_TYPE="tag"
+            else
+              VERSION=$(echo "${{ github.sha }}" | cut -c1-7)
+              REF_TYPE="branch"
             fi
           elif [ "${{ github.ref_type }}" = "tag" ]; then
             VERSION="${{ github.ref_name }}"
+            REF_TYPE="tag"
           else
             VERSION="v0.0.0-ci"
+            REF_TYPE="branch"
           fi
 
-          echo "Versão identificada: $VERSION"
+          echo "Identified Version: $VERSION"
+          echo "Reference Type: $REF_TYPE"
 
-          # 2. Se não for CI genérica de PR, aplicar regras rígidas
+          # 2. Apply validation and dynamic path rules if not a standard PR CI run
           if [ "$VERSION" != "v0.0.0-ci" ]; then
-            # Validar formato SemVer estrito
-            if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
-              echo "❌ Erro: A versão '$VERSION' não segue o padrão SemVer estrito (ex: v1.0.0 ou v1.0.0-rc.1)."
-              exit 1
-            fi
-
-            # Validar se a tag correspondente realmente existe no Git
-            TAG_CHECK=$(gh api repos/${{ github.repository }}/git/ref/tags/${VERSION} --silent || echo "not_found")
-            if [[ "$TAG_CHECK" == "not_found" ]]; then
-              echo "❌ Erro: A Tag Git '$VERSION' não existe no repositório. Por favor, crie e envie a Tag antes de fazer o deploy."
-              exit 1
-            fi
-            echo "✅ Tag Git verificada no repositório."
-
-            # Validar pré-requisito de RC se for tag de produção estável
-            if [[ ! "$VERSION" =~ -rc ]]; then
-              echo "🔍 Validando existência de tag Release Candidate correspondente..."
-              RC_TAGS=$(gh api repos/${{ github.repository }}/git/matching-refs/tags/${VERSION}-rc --silent || echo "[]")
-              if [ "$RC_TAGS" = "[]" ] || [ -z "$RC_TAGS" ]; then
-                echo "❌ Erro: Não é permitido deploy de produção da versão '$VERSION' sem que exista uma tag de Release Candidate correspondente (ex: ${VERSION}-rc.1) cadastrada previamente."
+            if [ "$REF_TYPE" = "tag" ]; then
+              # Validate that the tag starts with v1 (exclusive to standard-app)
+              if [[ ! "$VERSION" =~ ^v1\. ]]; then
+                echo "❌ Error: This branch only supports deployments for Major Version v1 (e.g. v1.x.x). The tag '$VERSION' is invalid."
                 exit 1
               fi
-              echo "✅ Validação concluída: Tag de Release Candidate encontrada."
+
+              # Validate strict SemVer format
+              if [[ ! "$VERSION" =~ ^v1\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
+                echo "❌ Error: The version '$VERSION' does not follow strict SemVer format (e.g. v1.0.0 or v1.0.0-rc.1)."
+                exit 1
+              fi
+
+              # Verify if the Git Tag exists on remote repository
+              TAG_CHECK=$(gh api repos/${{ github.repository }}/git/ref/tags/${VERSION} --silent || echo "not_found")
+              if [[ "$TAG_CHECK" == "not_found" ]]; then
+                echo "❌ Error: The Git Tag '$VERSION' does not exist in the repository. Please push the Tag before deploying."
+                exit 1
+              fi
+              echo "✅ Git Tag verified in the repository."
+
+              # Define paths and environments based on Tag type (Release Candidate vs Stable)
+              if [[ "$VERSION" =~ -rc ]]; then
+                TARGET_ENV="dev-uat"
+                BUCKET_NAME="${{ secrets.AWS_S3_BUCKET_DEV }}"
+                CF_DISTRIBUTION_ID="${{ secrets.CLOUDFRONT_DISTRIBUTION_ID_DEV }}"
+              else
+                TARGET_ENV="prod"
+                BUCKET_NAME="${{ secrets.AWS_S3_BUCKET_PROD }}"
+                CF_DISTRIBUTION_ID="${{ secrets.CLOUDFRONT_DISTRIBUTION_ID_PROD }}"
+
+                # Validate Release Candidate prerequisite for stable production releases
+                echo "🔍 Validating matching Release Candidate tag prerequisite..."
+                RC_TAGS=$(gh api repos/${{ github.repository }}/git/matching-refs/tags/${VERSION}-rc --silent || echo "[]")
+                if [ "$RC_TAGS" = "[]" ] || [ -z "$RC_TAGS" ]; then
+                  echo "❌ Error: Production release of version '$VERSION' is blocked because no corresponding Release Candidate tag (e.g. ${VERSION}-rc.1) was found in Git history."
+                  exit 1
+                fi
+                echo "✅ Validation complete: Matching Release Candidate tag found."
+              fi
+
+              DEPLOY_PATH="builds/from-tags/$VERSION"
+            else
+              # Manual branch deployment (creates sandbox preview under dev-uat bucket using commit SHA)
+              TARGET_ENV="dev-uat"
+              BUCKET_NAME="${{ secrets.AWS_S3_BUCKET_DEV }}"
+              CF_DISTRIBUTION_ID="${{ secrets.CLOUDFRONT_DISTRIBUTION_ID_DEV }}"
+              DEPLOY_PATH="builds/from-branches/$VERSION"
             fi
+          else
+            TARGET_ENV=""
+            BUCKET_NAME=""
+            CF_DISTRIBUTION_ID=""
+            DEPLOY_PATH=""
           fi
 
           echo "release_version=$VERSION" >> $GITHUB_OUTPUT
+          echo "deploy_path=$DEPLOY_PATH" >> $GITHUB_OUTPUT
+          echo "target_env=$TARGET_ENV" >> $GITHUB_OUTPUT
+          echo "bucket_name=$BUCKET_NAME" >> $GITHUB_OUTPUT
+          echo "cf_distribution_id=$CF_DISTRIBUTION_ID" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ github.token }}
 
@@ -140,10 +172,11 @@ jobs:
       - name: Build Application
         run: |
           VERSION="${{ needs.setup.outputs.release_version }}"
+          DEPLOY_PATH="${{ needs.setup.outputs.deploy_path }}"
           if [ "$VERSION" = "v0.0.0-ci" ]; then
             npm run build
           else
-            npm run build -- --base-href=/builds/$VERSION/
+            npm run build -- --base-href=/$DEPLOY_PATH/
           fi
 
       - name: Upload Build Artifacts
@@ -174,12 +207,13 @@ jobs:
 
       - name: Sync files to S3 Bucket
         run: |
-          aws s3 sync dist-files/ s3://${{ secrets.AWS_S3_BUCKET }}/builds/${{ needs.setup.outputs.release_version }}/ --cache-control "public, max-age=31536000, immutable"
+          aws s3 sync dist-files/ s3://${{ needs.setup.outputs.bucket_name }}/${{ needs.setup.outputs.deploy_path }}/ --cache-control "public, max-age=31536000, immutable"
 
       - name: Update index.html Cache-Control Metadata
         run: |
-          aws s3 cp s3://${{ secrets.AWS_S3_BUCKET }}/builds/${{ needs.setup.outputs.release_version }}/index.html s3://${{ secrets.AWS_S3_BUCKET }}/index.html --metadata-directive REPLACE --cache-control "public, max-age=0, s-maxage=86400, must-revalidate"
+          aws s3 cp s3://${{ needs.setup.outputs.bucket_name }}/${{ needs.setup.outputs.deploy_path }}/index.html s3://${{ needs.setup.outputs.bucket_name }}/index.html --metadata-directive REPLACE --cache-control "public, max-age=0, s-maxage=86400, must-revalidate"
 
       - name: Invalidate CloudFront Cache
         run: |
-          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/index.html"
+          aws cloudfront create-invalidation --distribution-id ${{ needs.setup.outputs.cf_distribution_id }} --paths "/index.html"
+
