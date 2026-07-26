@@ -5,7 +5,7 @@ variable "bucket_name" {
 
 variable "environment" {
   type        = string
-  description = "The environment suffix (e.g. dev-uat, prod)"
+  description = "The environment suffix (e.g. dev, prod)"
 }
 
 variable "enable_lifecycle_cleanup" {

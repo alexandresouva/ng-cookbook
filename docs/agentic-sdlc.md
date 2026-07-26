@@ -102,8 +102,6 @@ Para habilitar esse fluxo, o repositório manterá a seguinte estrutura de confi
 
 ---
 
-## 🚀 Benefícios do Flow para Todas as Branches
-
-Como este fluxo de automação é configurado na **Fase 2** na branch `main`, todas as três variações arquiteturais (`variation/standard-app`, `variation/monorepo-nx` e `variation/micro-frontends`) herdarão esses agentes.
+Como este fluxo de automação é configurado na **Fase 2** na branch `main`, tanto a arquitetura padrão base (Client-Side Rendering na `main`) quanto a variação de Server-Side Rendering (na branch `variant/ssr`) herdarão esses agentes.
 
 Isso significa que, independentemente da arquitetura escolhida, os times utilizarão a mesma esteira profissional de desenvolvimento assistido por IA.
