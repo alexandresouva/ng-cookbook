@@ -72,6 +72,10 @@ docker stop ng-cookbook-app
 docker rm ng-cookbook-app
 ```
 
+## Deployment
+
+For details on the CI/CD pipeline, tag release flow, deployment requirements, and rollback instructions, please refer to the onboarding [Deployment Guide](docs/DEPLOY.md).
+
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.

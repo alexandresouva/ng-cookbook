@@ -89,15 +89,20 @@ graph TD
   - [ ] Módulo de Autenticação desacoplado (JWT customizado + MSAL / Google Sign-In).
   - [ ] Integração de Observabilidade (Sentry/LogRocket) e Global Error Handler.
 - **Fase 6: Deploy, CI/CD & Infraestrutura**
-  - **Fase 6.1: Deploy Simples & Manual de SPA**
-    - [ ] Criação manual de S3 Bucket Privado com bloqueio de acesso público.
-    - [ ] Configuração manual de CDN CloudFront com Origin Access Control (OAC).
-    - [ ] Configuração manual de páginas de erro 403/404 para roteamento SPA.
-    - [ ] Build local (`npm run build`) e upload manual dos arquivos para o S3.
-  - **Fase 6.2: Deploy Automatizado com IaC (Terraform) & CI/CD**
-    - [ ] Criação de Pipeline GitHub Actions (Linter, Testes, Build, Deploy automático no S3 + Invalidação de Cache).
-    - [ ] Escrita de arquivos Terraform (HCL) para provisionamento automatizado de S3 + CloudFront + OAC.
-  - **Fase 6.3: SSR e Conteinerização (Docker & Nginx)**
+  - **Fase 6.1: Hospedagem Estática Manual na AWS (S3 & CloudFront)**
+    - [x] Criação manual de S3 Bucket Privado com OAC e bloqueio de acesso público.
+    - [x] Configuração manual de CDN CloudFront com Origin Access Control (OAC).
+    - [x] Configuração manual de páginas de erro 403/404 para roteamento SPA.
+    - [x] Build local (`npm run build`) e upload manual dos arquivos para o S3.
+  - **Fase 6.2: Automação de CI/CD por Tags e Versionamento SemVer**
+    - [x] Criação de Pipeline GitHub Actions com concorrência paralela (Linter e Testes), build dependente e deploy condicionado a Tags SemVer (`v*`).
+    - [x] Validação automática de integridade de tags e checagem de pré-requisito de Release Candidate (`-rc`) para releases estáveis.
+    - [x] Deploy versionado em subdiretórios `/builds/TAG/` no S3 com atualização dinâmica do `index.html` na raiz.
+    - [x] Invalidação de cache no CloudFront direcionada ao `/index.html`.
+  - **Fase 6.3: Infraestrutura como Código (Terraform) Multi-Ambiente**
+    - [ ] Criação de infraestrutura Terraform segregando o projeto em dois ambientes distintos: `prod` (Produção, importando e gerenciando os recursos legados existentes) e `dev-uat` (Desenvolvimento e Homologação, provisionado 100% dinamicamente).
+    - [ ] Integração do Terraform na pipeline para gerenciar os ambientes de forma declarativa e orquestrar variáveis.
+  - **Fase 6.4: SSR e Conteinerização (Docker & Nginx)**
     - [ ] Dockerfile otimizado para build de SPA estática com Nginx ou SSR único.
     - [ ] Migração para SSR (Server-Side Rendering) no Angular.
     - [ ] Deploy AWS App Runner para hospedar o container Docker rodando a aplicação SSR.
@@ -117,7 +122,8 @@ graph TD
 - **Fase 6: CI/CD com Affected, Docker & Deploy AWS**
   - [ ] Docker Compose do workspace para desenvolvimento local.
   - [ ] CI/CD no GitHub Actions usando `nx affected` para processar apenas projetos modificados.
-  - [ ] Deploy na AWS de aplicações afetadas.
+  - [ ] Deploy na AWS de aplicações afetadas acionado estritamente por Tags SemVer (`v*`) com trava de Release Candidate (`-rc`).
+  - [ ] Configuração de infraestrutura Terraform segregando em múltiplos ambientes (`prod` e `dev-uat`) para as aplicações do monorepo.
 
 ---
 
@@ -132,5 +138,5 @@ graph TD
   - [ ] Módulo de Autenticação centralizado compartilhado entre MFEs.
 - **Fase 6: Docker Compose & Deploy MFE na AWS**
   - [ ] Docker Compose completo para rodar a malha de MFEs localmente.
-  - [ ] CI/CD com deploys independentes por MFE.
-  - [ ] Deploy na AWS com buckets S3 e distribuições CloudFront isolados por remote.
+  - [ ] CI/CD com deploys independentes por MFE acionados estritamente por Tags SemVer (`v*`) com trava de Release Candidate (`-rc`).
+  - [ ] Deploy na AWS com buckets S3 e distribuições CloudFront isolados por remote, segregando a infraestrutura em múltiplos ambientes (`prod` e `dev-uat`) via Terraform.
