@@ -101,6 +101,9 @@ graph TD
     - [x] Invalidação de cache no CloudFront direcionada ao `/index.html`.
   - **Fase 6.3: Infraestrutura como Código (Terraform) Multi-Ambiente**
     - [ ] Criação de infraestrutura Terraform segregando o projeto em dois ambientes distintos: `prod` (Produção, importando e gerenciando os recursos legados existentes) e `dev-uat` (Desenvolvimento e Homologação, provisionado 100% dinamicamente).
+    - [ ] Configuração de regras de Lifecycle Policy no S3 para expirar e deletar deploys de branches (`builds/from-branches/`) automaticamente após 30 dias.
+    - [ ] Migração da pipeline de deploy para o modelo híbrido: suporte a deploys de feature branches em DEV/UAT (usando `/builds/from-branches/SHA/` para evitar conflitos) e deploys de releases oficiais baseados em Tags (`/builds/from-tags/TAG/`).
+    - [ ] Simplificação da interface do GitHub Actions eliminando o input de texto redundante e otimizando para a seleção nativa.
     - [ ] Integração do Terraform na pipeline para gerenciar os ambientes de forma declarativa e orquestrar variáveis.
   - **Fase 6.4: SSR e Conteinerização (Docker & Nginx)**
     - [ ] Dockerfile otimizado para build de SPA estática com Nginx ou SSR único.
