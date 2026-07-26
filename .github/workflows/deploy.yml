@@ -2,21 +2,88 @@ name: CI/CD - Deploy SPA
 
 on:
   push:
-    branches:
-      - variation/standard-app
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
   pull_request:
     branches:
       - variation/standard-app
   workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Versão para o deploy (Ex: v1.0.0-rc.1). Se vazio, a pipeline tentará usar a Tag selecionada.'
+        required: false
+        default: ''
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    name: Validate Version
+    outputs:
+      release_version: ${{ steps.versioning.outputs.release_version }}
+    steps:
+      - name: Determine and Validate Version
+        id: versioning
+        run: |
+          # 1. Determinar versão
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.release_version }}"
+            if [ -z "$VERSION" ]; then
+              if [ "${{ github.ref_type }}" = "tag" ]; then
+                VERSION="${{ github.ref_name }}"
+              else
+                echo "❌ Erro: Deploy manual exige especificar uma versão (ex: v1.0.0) ou selecionar uma Tag Git no menu."
+                exit 1
+              fi
+            fi
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
+            VERSION="${{ github.ref_name }}"
+          else
+            VERSION="v0.0.0-ci"
+          fi
+
+          echo "Versão identificada: $VERSION"
+
+          # 2. Se não for CI genérica de PR, aplicar regras rígidas
+          if [ "$VERSION" != "v0.0.0-ci" ]; then
+            # Validar formato SemVer estrito
+            if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
+              echo "❌ Erro: A versão '$VERSION' não segue o padrão SemVer estrito (ex: v1.0.0 ou v1.0.0-rc.1)."
+              exit 1
+            fi
+
+            # Validar se a tag correspondente realmente existe no Git
+            TAG_CHECK=$(gh api repos/${{ github.repository }}/git/ref/tags/${VERSION} --silent || echo "not_found")
+            if [[ "$TAG_CHECK" == "not_found" ]]; then
+              echo "❌ Erro: A Tag Git '$VERSION' não existe no repositório. Por favor, crie e envie a Tag antes de fazer o deploy."
+              exit 1
+            fi
+            echo "✅ Tag Git verificada no repositório."
+
+            # Validar pré-requisito de RC se for tag de produção estável
+            if [[ ! "$VERSION" =~ -rc ]]; then
+              echo "🔍 Validando existência de tag Release Candidate correspondente..."
+              RC_TAGS=$(gh api repos/${{ github.repository }}/git/matching-refs/tags/${VERSION}-rc --silent || echo "[]")
+              if [ "$RC_TAGS" = "[]" ] || [ -z "$RC_TAGS" ]; then
+                echo "❌ Erro: Não é permitido deploy de produção da versão '$VERSION' sem que exista uma tag de Release Candidate correspondente (ex: ${VERSION}-rc.1) cadastrada previamente."
+                exit 1
+              fi
+              echo "✅ Validação concluída: Tag de Release Candidate encontrada."
+            fi
+          fi
+
+          echo "release_version=$VERSION" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ github.token }}
+
   lint:
     runs-on: ubuntu-latest
     name: Code Linting
+    needs: setup
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -36,6 +103,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     name: Unit Testing
+    needs: setup
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -55,7 +123,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     name: Production Build
-    needs: [lint, test]
+    needs: [setup, lint, test]
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -70,10 +138,16 @@ jobs:
         run: npm ci
 
       - name: Build Application
-        run: npm run build
+        run: |
+          VERSION="${{ needs.setup.outputs.release_version }}"
+          if [ "$VERSION" = "v0.0.0-ci" ]; then
+            npm run build
+          else
+            npm run build -- --base-href=/builds/$VERSION/
+          fi
 
       - name: Upload Build Artifacts
-        if: (github.event_name == 'push' && github.ref == 'refs/heads/variation/standard-app') || github.event_name == 'workflow_dispatch'
+        if: needs.setup.outputs.release_version != 'v0.0.0-ci'
         uses: actions/upload-artifact@v7
         with:
           name: dist-files
@@ -83,8 +157,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     name: Deploy Static Files
-    needs: build
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/variation/standard-app') || github.event_name == 'workflow_dispatch'
+    needs: [setup, build]
+    if: needs.setup.outputs.release_version != 'v0.0.0-ci'
     steps:
       - name: Download Build Artifacts
         uses: actions/download-artifact@v8
@@ -100,11 +174,11 @@ jobs:
 
       - name: Sync files to S3 Bucket
         run: |
-          aws s3 sync dist-files/ s3://${{ secrets.AWS_S3_BUCKET }} --delete --cache-control "public, max-age=31536000, immutable"
+          aws s3 sync dist-files/ s3://${{ secrets.AWS_S3_BUCKET }}/builds/${{ needs.setup.outputs.release_version }}/ --cache-control "public, max-age=31536000, immutable"
 
       - name: Update index.html Cache-Control Metadata
         run: |
-          aws s3 cp s3://${{ secrets.AWS_S3_BUCKET }}/index.html s3://${{ secrets.AWS_S3_BUCKET }}/index.html --metadata-directive REPLACE --cache-control "public, max-age=0, s-maxage=86400, must-revalidate"
+          aws s3 cp s3://${{ secrets.AWS_S3_BUCKET }}/builds/${{ needs.setup.outputs.release_version }}/index.html s3://${{ secrets.AWS_S3_BUCKET }}/index.html --metadata-directive REPLACE --cache-control "public, max-age=0, s-maxage=86400, must-revalidate"
 
       - name: Invalidate CloudFront Cache
         run: |
