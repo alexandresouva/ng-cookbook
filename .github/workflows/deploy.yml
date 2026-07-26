@@ -98,10 +98,50 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
+  lint:
+    runs-on: ubuntu-latest
+    name: Code Linting
+    needs: setup
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Linter
+        run: npm run lint
+
+  test:
+    runs-on: ubuntu-latest
+    name: Unit Testing
+    needs: setup
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Tests
+        run: npm run test
+
   build:
     runs-on: ubuntu-latest
     name: Production Build
-    needs: setup
+    needs: [setup, lint, test]
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
