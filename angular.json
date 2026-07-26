@@ -45,7 +45,14 @@
                   "maximumError": "8kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "public",
+                  "ignore": ["mockServiceWorker.js"]
+                }
+              ]
             },
             "development": {
               "optimization": false,

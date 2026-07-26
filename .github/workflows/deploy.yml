@@ -1,0 +1,180 @@
+name: Deployment
+
+on:
+  push:
+    tags:
+      - 'v1.*'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    name: Validate Version
+    outputs:
+      release_version: ${{ steps.versioning.outputs.release_version }}
+      deploy_path: ${{ steps.versioning.outputs.deploy_path }}
+      target_env: ${{ steps.versioning.outputs.target_env }}
+    steps:
+      - name: Determine and Validate Version
+        id: versioning
+        run: |
+          # 1. Determine version and trigger type
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [ "${{ github.ref_type }}" = "tag" ]; then
+              VERSION="${{ github.ref_name }}"
+              REF_TYPE="tag"
+            else
+              VERSION=$(echo "${{ github.sha }}" | cut -c1-7)
+              REF_TYPE="branch"
+            fi
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
+            VERSION="${{ github.ref_name }}"
+            REF_TYPE="tag"
+          else
+            VERSION="v0.0.0-ci"
+            REF_TYPE="branch"
+          fi
+
+          echo "Identified Version: $VERSION"
+          echo "Reference Type: $REF_TYPE"
+
+          # 2. Apply validation and dynamic path rules if not a standard PR CI run
+          if [ "$VERSION" != "v0.0.0-ci" ]; then
+            if [ "$REF_TYPE" = "tag" ]; then
+              # Validate that the tag starts with v1 (exclusive to standard-app)
+              if [[ ! "$VERSION" =~ ^v1\. ]]; then
+                echo "❌ Error: This branch only supports deployments for Major Version v1 (e.g. v1.x.x). The tag '$VERSION' is invalid."
+                exit 1
+              fi
+
+              # Validate strict SemVer format
+              if [[ ! "$VERSION" =~ ^v1\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
+                echo "❌ Error: The version '$VERSION' does not follow strict SemVer format (e.g. v1.0.0 or v1.0.0-rc.1)."
+                exit 1
+              fi
+
+              # Verify if the Git Tag exists on remote repository
+              TAG_CHECK=$(gh api repos/${{ github.repository }}/git/ref/tags/${VERSION} --silent || echo "not_found")
+              if [[ "$TAG_CHECK" == "not_found" ]]; then
+                echo "❌ Error: The Git Tag '$VERSION' does not exist in the repository. Please push the Tag before deploying."
+                exit 1
+              fi
+              echo "✅ Git Tag verified in the repository."
+
+              # Define paths and environments based on Tag type (Release Candidate vs Stable)
+              if [[ "$VERSION" =~ -rc ]]; then
+                TARGET_ENV="dev-uat"
+              else
+                TARGET_ENV="prod"
+
+                # Validate Release Candidate prerequisite for stable production releases
+                echo "🔍 Validating matching Release Candidate tag prerequisite..."
+                RC_TAGS=$(gh api repos/${{ github.repository }}/git/matching-refs/tags/${VERSION}-rc --silent || echo "[]")
+                if [ "$RC_TAGS" = "[]" ] || [ -z "$RC_TAGS" ]; then
+                  echo "❌ Error: Production release of version '$VERSION' is blocked because no corresponding Release Candidate tag (e.g. ${VERSION}-rc.1) was found in Git history."
+                  exit 1
+                fi
+                echo "✅ Validation complete: Matching Release Candidate tag found."
+              fi
+
+              DEPLOY_PATH="builds/from-tags/$VERSION"
+            else
+              # Manual branch deployment (creates sandbox preview under dev-uat bucket using commit SHA)
+              TARGET_ENV="dev-uat"
+              DEPLOY_PATH="builds/from-branches/$VERSION"
+            fi
+          else
+            TARGET_ENV=""
+            DEPLOY_PATH=""
+          fi
+
+          echo "release_version=$VERSION" >> $GITHUB_OUTPUT
+          echo "deploy_path=$DEPLOY_PATH" >> $GITHUB_OUTPUT
+          echo "target_env=$TARGET_ENV" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  build:
+    runs-on: ubuntu-latest
+    name: Production Build
+    needs: setup
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Application
+        run: |
+          VERSION="${{ needs.setup.outputs.release_version }}"
+          DEPLOY_PATH="${{ needs.setup.outputs.deploy_path }}"
+          if [ "$VERSION" = "v0.0.0-ci" ]; then
+            npm run build
+          else
+            npm run build -- --base-href=/$DEPLOY_PATH/
+          fi
+
+      - name: Upload Build Artifacts
+        if: needs.setup.outputs.release_version != 'v0.0.0-ci'
+        uses: actions/upload-artifact@v7
+        with:
+          name: dist-files
+          path: dist/ng-cookbook/browser/
+          retention-days: 1
+
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy Static Files
+    needs: [setup, build]
+    if: needs.setup.outputs.release_version != 'v0.0.0-ci'
+    steps:
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: dist-files
+          path: dist-files
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-2
+
+      - name: Sync files to S3 Bucket
+        run: |
+          if [ "${{ needs.setup.outputs.target_env }}" = "prod" ]; then
+            BUCKET_NAME="${{ secrets.AWS_S3_BUCKET_PROD }}"
+          else
+            BUCKET_NAME="${{ secrets.AWS_S3_BUCKET_DEV }}"
+          fi
+          aws s3 sync dist-files/ s3://$BUCKET_NAME/${{ needs.setup.outputs.deploy_path }}/ --cache-control "public, max-age=31536000, immutable"
+
+      - name: Update index.html Cache-Control Metadata
+        run: |
+          if [ "${{ needs.setup.outputs.target_env }}" = "prod" ]; then
+            BUCKET_NAME="${{ secrets.AWS_S3_BUCKET_PROD }}"
+          else
+            BUCKET_NAME="${{ secrets.AWS_S3_BUCKET_DEV }}"
+          fi
+          aws s3 cp s3://$BUCKET_NAME/${{ needs.setup.outputs.deploy_path }}/index.html s3://$BUCKET_NAME/index.html --metadata-directive REPLACE --cache-control "public, max-age=0, s-maxage=86400, must-revalidate"
+
+      - name: Invalidate CloudFront Cache
+        run: |
+          if [ "${{ needs.setup.outputs.target_env }}" = "prod" ]; then
+            DIST_ID="${{ secrets.CLOUDFRONT_DISTRIBUTION_ID_PROD }}"
+          else
+            DIST_ID="${{ secrets.CLOUDFRONT_DISTRIBUTION_ID_DEV }}"
+          fi
+          aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/index.html"
+
