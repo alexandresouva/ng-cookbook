@@ -1,145 +1,101 @@
-# 🚀 Angular Enterprise Template - Roadmap de Estudos & Evolução
+# 🚀 Angular SPA - Roadmap de Estudos & Evolução
 
 Este documento serve como um guia de estudo e passo a passo prático para transformar este repositório em um template robusto, modular e pronto para produção, seguindo as melhores práticas modernas do ecossistema Angular.
 
-No futuro, este repositório poderá ser utilizado como base (boilerplate) para a inicialização de qualquer novo projeto Angular na organização.
+No futuro, este repositório poderá ser utilizado como base (boilerplate) para a inicialização de qualquer novo projeto Angular SPA.
 
 ---
 
 ## 🗺️ Visão Geral do Roadmap & Estratégia de Branches
 
-Para evitar complexidade desnecessária e manter o projeto focado, adotamos uma estratégia de **bifurcação de branches** após as fases iniciais. As fundações comuns (Fases 1 a 3) são implementadas na branch `main`. A partir da Fase 4, o projeto divide-se em 3 variações arquiteturais distintas:
+Adotamos uma estratégia focada exclusivamente na arquitetura de aplicação única (SPA) em Angular, avaliando as duas principais abordagens de renderização web lado a lado:
 
 ```mermaid
 graph TD
-    %% Base Comum na Branch Main
-    subgraph Branch main
+    %% Base Comum e CSR na Branch main
+    subgraph Branch main (Vitrine - Client-Side Rendering)
         F1[Fase 1: Fundações & Qualidade] --> F2[Fase 2: IA & SDLC Automation]
         F2 --> F3[Fase 3: Testes, a11y & Mocks]
+        F3 --> F4[Fase 4: Standard CSR Setup]
+        F4 --> F5[Fase 5: IaC & CI/CD Automatizado]
+        F5 --> F6[Fase 6: Tema do Projeto - Open/TBD]
     end
 
-    %% Bifurcação
-    F3 --> B_STD[branch: variation/standard-app]
-    F3 --> B_NX[branch: variation/monorepo-nx]
-    F3 --> B_MFE[branch: variation/micro-frontends]
+    %% Evolução para SSR
+    F6 --> B_SSR[branch: variant/ssr]
 
-    %% Branch Standard
-    subgraph variation/standard-app
-        FS4[Fase 4: Setup Standalone & Zoneless] --> FS5[Fase 5: Perf, Auth & APM]
-        FS5 --> FS6[Fase 6: Docker & Deploy AWS S3/CF]
-    end
-
-    %% Branch Monorepo Nx
-    subgraph variation/monorepo-nx
-        FN4[Fase 4: Nx Setup, Libs & NgRx] --> FN5[Fase 5: Automação & Generators]
-        FN5 --> FN6[Fase 6: CI Affected & Deploy AWS]
-    end
-
-    %% Branch Micro Frontends
-    subgraph variation/micro-frontends
-        FM4[Fase 4: MFE Module Federation] --> FM5[Fase 5: Comunicação & Singletons]
-        FM5 --> FM6[Fase 6: Docker Compose & Deploy MFE]
+    %% Variação SSR
+    subgraph variant/ssr (Server-Side Rendering)
+        FS7[Fase 7: Migração para Angular SSR] --> FS8[Fase 8: Deploy AWS App Runner]
     end
 ```
 
-> [!NOTE]
-> **Fluxo de Trabalho de IA Unificado**: Todas as branches adotam o fluxo de desenvolvimento assistido por agentes criado na Fase 2 (criação de issues, geração de SDD, implementação guiada e submissão estruturada de PRs com revisão humana obrigatória antes do merge). Veja mais detalhes em [docs/agentic-sdlc.md](file:///Users/alexandre/Desktop/playground/ng-cookbook/docs/agentic-sdlc.md).
-
 ---
 
-## 📅 Detalhamento das Fases
+## 📅 Detalhamento das Fases (Branch `main`)
 
-### 🟢 Fase 1: Fundações, Arquitetura & Qualidade de Código (Branch `main`)
+### 🟢 Fase 1: Fundações, Arquitetura & Qualidade de Código
 
 - [x] **Linting & Formatting** (ESLint, Prettier, EditorConfig)
 - [x] **Git Hooks** (Husky, lint-staged, Commitlint)
 - [x] **Feature-Based Architecture** (Folder Structure, Path Aliases & Boundary Enforcement)
-- [x] **Zod DTOs & Mappers (Anti-Corruption Layer):** Validação em runtime e sanitização de payloads de API (DTOs), transformando-os em modelos de domínio tipados.
-- [x] **Templates de Documentação Técnica** (Estruturação de templates de **ADR** - Architecture Decision Records e **RFC** - Request for Comments na pasta `docs/` para governança de decisões arquiteturais)
+- [x] **Zod DTOs & Mappers (Anti-Corruption Layer):** Validação em runtime e sanitização de payloads de API (DTOs).
+- [x] **Templates de Documentação Técnica** (ADR e RFC na pasta `docs/`)
 
 ---
 
-### 🤖 Fase 2: IA, Agents & Automação de SDLC (Branch `main`)
+### 🤖 Fase 2: IA, Agents & Automação de SDLC
 
-- [x] **Integração de Agentes e IA**: Definição e automação do ciclo de desenvolvimento assistido por agentes (Issue Creator, SDD Generator, Code Builder e PR Submitter com revisão humana).
+- [x] **Integração de Agentes e IA**: Definição e automação do ciclo de desenvolvimento assistido por agentes (Issue Creator, SDD Generator, Code Builder e PR Submitter com commits convencionais).
 
 ---
 
-### 🔴 Fase 3: Estrutura de Testes Automatizados, Acessibilidade (a11y) & Mocks (Branch `main`)
+### 🔴 Fase 3: Estrutura de Testes Automatizados, Acessibilidade (a11y) & Mocks
 
 - [x] **Testes Unitários** (Vitest)
-- [x] **Políticas de Cobertura (Coverage Thresholds)**
+- [x] **Políticas de Cobertura (Coverage Thresholds a 100%)**
 - [x] **Testes de Componentes / Integração local**
-- [x] **Testes End-to-End (E2E)** (Playwright ou Cypress)
-- [x] **Testes de Acessibilidade (a11y)** (Integração do Axe-core nos testes e validação ARIA)
-- [x] **Estratégia de Mocking de APIs** (MSW - Mock Service Worker para desenvolvimento offline e consistência nos testes)
+- [x] **Testes End-to-End (E2E)** (Playwright)
+- [x] **Testes de Acessibilidade (a11y)** (Vitest-Axe)
+- [x] **Estratégia de Mocking de APIs** (MSW - Mock Service Worker para offline e consistência nos testes)
 
 ---
 
-## 🔀 Bifurcação das Fases (Variações Específicas)
+### 🔲 Fase 4: Setup Standalone & Zoneless
 
-### 📦 Variação A: `variation/standard-app` (Aplicação Standalone Única)
-
-- **Fase 4: Setup Standalone & Zoneless**
-  - [ ] Habilitação e testes da aplicação rodando de forma **Zoneless** (sem zone.js).
-  - [ ] Definição do State Management local simples usando Signals.
-- **Fase 5: Performance, Autenticação & Observabilidade**
-  - [ ] Deferrable Views (`@defer`), SSR (Server-Side Rendering) & Hydration.
-  - [ ] Internacionalização (i18n / Transloco).
-  - [ ] Módulo de Autenticação desacoplado (JWT customizado + MSAL / Google Sign-In).
-  - [ ] Integração de Observabilidade (Sentry/LogRocket) e Global Error Handler.
-- **Fase 6: Deploy, CI/CD & Infraestrutura**
-  - **Fase 6.1: Hospedagem Estática Manual na AWS (S3 & CloudFront)**
-    - [x] Criação manual de S3 Bucket Privado com OAC e bloqueio de acesso público.
-    - [x] Configuração manual de CDN CloudFront com Origin Access Control (OAC).
-    - [x] Configuração manual de páginas de erro 403/404 para roteamento SPA.
-    - [x] Build local (`npm run build`) e upload manual dos arquivos para o S3.
-  - **Fase 6.2: Automação de CI/CD por Tags e Versionamento SemVer**
-    - [x] Criação de Pipeline GitHub Actions com concorrência paralela (Linter e Testes), build dependente e deploy condicionado a Tags SemVer (`v*`).
-    - [x] Validação automática de integridade de tags e checagem de pré-requisito de Release Candidate (`-rc`) para releases estáveis.
-    - [x] Deploy versionado em subdiretórios `/builds/TAG/` no S3 com atualização dinâmica do `index.html` na raiz.
-    - [x] Invalidação de cache no CloudFront direcionada ao `/index.html`.
-  - **Fase 6.3: Infraestrutura como Código (Terraform) Multi-Ambiente**
-    - [ ] Criação de infraestrutura Terraform segregando o projeto em dois ambientes distintos: `prod` (Produção, importando e gerenciando os recursos legados existentes) e `dev-uat` (Desenvolvimento e Homologação, provisionado 100% dinamicamente).
-    - [ ] Configuração de regras de Lifecycle Policy no S3 para expirar e deletar deploys de branches (`builds/from-branches/`) automaticamente após 30 dias.
-    - [ ] Migração da pipeline de deploy para o modelo híbrido: suporte a deploys de feature branches em DEV/UAT (usando `/builds/from-branches/SHA/` para evitar conflitos) e deploys de releases oficiais baseados em Tags (`/builds/from-tags/TAG/`).
-    - [ ] Simplificação da interface do GitHub Actions eliminando o input de texto redundante e otimizando para a seleção nativa.
-    - [ ] Integração do Terraform na pipeline para gerenciar os ambientes de forma declarativa e orquestrar variáveis.
-  - **Fase 6.4: SSR e Conteinerização (Docker & Nginx)**
-    - [ ] Dockerfile otimizado para build de SPA estática com Nginx ou SSR único.
-    - [ ] Migração para SSR (Server-Side Rendering) no Angular.
-    - [ ] Deploy AWS App Runner para hospedar o container Docker rodando a aplicação SSR.
+- [ ] Habilitação e testes da aplicação rodando de forma **Zoneless** (sem zone.js).
+- [ ] Definição do State Management local usando Signals (Signals-only).
 
 ---
 
-### 🏛️ Variação B: `variation/monorepo-nx` (Monorepo com Nx)
+### ⚙️ Fase 5: Infraestrutura como Código (Terraform) & CI/CD Automatizado
 
-- **Fase 4: Nx Setup, Libs & NgRx**
-  - [ ] Migração do projeto para um Nx Workspace.
-  - [ ] Divisão tática de bibliotecas (`feature`, `ui`, `data-access`, `util`).
-  - [ ] Boundary Rules (`nx-enforce-module-boundaries`).
-  - [ ] Gerenciamento de Estado com NgRx (NgRx Store/Effects + NgRx Signal Store).
-- **Fase 5: Automação, Storybook & Generators**
-  - [ ] Storybook integrado a nível de bibliotecas compartilhadas de UI.
-  - [ ] Criação de Nx Generators locais para scaffolding automático de novas libs/features.
-- **Fase 6: CI/CD com Affected, Docker & Deploy AWS**
-  - [ ] Docker Compose do workspace para desenvolvimento local.
-  - [ ] CI/CD no GitHub Actions usando `nx affected` para processar apenas projetos modificados.
-  - [ ] Deploy na AWS de aplicações afetadas acionado estritamente por Tags SemVer (`v*`) com trava de Release Candidate (`-rc`).
-  - [ ] Configuração de infraestrutura Terraform segregando em múltiplos ambientes (`prod` e `dev-uat`) para as aplicações do monorepo.
+- [x] **Hospedagem Estática Inicial:** Criação manual de S3 Bucket Privado com OAC e CDN CloudFront.
+- [x] **Automação de CI/CD por Tags (SemVer):** Deploy condicionado a tags `v1.*`, com trava de Release Candidate (`-rc`) para produções estáveis.
+- [x] **Infraestrutura como Código (Terraform):** Gerenciamento declarativo dos buckets de desenvolvimento (`-dev`) e produção (`-prod`) com bloqueio de acesso público e políticas seguras.
+- [x] **Regra de Ciclo de Vida do S3:** Remoção automática de builds sandbox de branches (`builds/from-branches/`) após 30 dias.
+- [x] **Configurações de Ambientes Angular:** Criação de `environment.dev.ts` e `environment.prod.ts` gerenciados via substituições de arquivos nativas no `angular.json`.
 
 ---
 
-### 🌐 Variação C: `variation/micro-frontends` (Micro Frontends - MFE)
+### 🎨 Fase 6: Tema do Projeto & Interface do Usuário (Vitrine)
 
-- **Fase 4: MFE Module Federation**
-  - [ ] Setup do Module Federation para Host/Shell e Remotes.
-  - [ ] Runtime Dynamic Integration (carregamento dinâmico de remotes sem re-build).
-- **Fase 5: Comunicação, Shared State & Singletons**
-  - [ ] Estratégia de compartilhamento de dependências singleton do Angular.
-  - [ ] Comunicação inter-MFE usando Event Bus ou Shared State.
-  - [ ] Módulo de Autenticação centralizado compartilhado entre MFEs.
-- **Fase 6: Docker Compose & Deploy MFE na AWS**
-  - [ ] Docker Compose completo para rodar a malha de MFEs localmente.
-  - [ ] CI/CD com deploys independentes por MFE acionados estritamente por Tags SemVer (`v*`) com trava de Release Candidate (`-rc`).
-  - [ ] Deploy na AWS com buckets S3 e distribuições CloudFront isolados por remote, segregando a infraestrutura em múltiplos ambientes (`prod` e `dev-uat`) via Terraform.
+- **Status:** `Aberto / A Definir`
+- [ ] Escolha e validação do tema visual e escopo de telas da aplicação SPA.
+- [ ] Desenvolvimento dos componentes de UI sob padrões estéticos premium.
+
+---
+
+## 🔀 Evolução para Server-Side Rendering (Branch `variant/ssr`)
+
+### 🌀 Fase 7: Migração para Angular SSR
+
+- [ ] Execução do schematic de SSR (`ng add @angular/ssr`) para habilitar pré-renderização no servidor Node.js/Express.
+- [ ] Resolução de APIs específicas do navegador (checagem de plataforma `isPlatformBrowser`).
+- [ ] Otimização de SEO dinâmico, meta tags e cabeçalhos de resposta.
+
+### 🐳 Fase 8: Deploy Conteinerizado com AWS App Runner
+
+- [ ] Escrita do `Dockerfile` otimizado para expor o servidor Express compilado do Angular SSR.
+- [ ] Pipeline de Deploy para compilar a imagem de container e enviá-la para o AWS ECR (Elastic Container Registry).
+- [ ] Provisionamento do AWS App Runner gerenciando o ciclo de vida do container dinamicamente (integrado ao CloudFront).

@@ -58,8 +58,8 @@ jobs:
               fi
 
               # Verify if the Git Tag exists on remote repository
-              TAG_CHECK=$(gh api repos/${{ github.repository }}/git/ref/tags/${VERSION} --silent || echo "not_found")
-              if [[ "$TAG_CHECK" == "not_found" ]]; then
+              TAG_CHECK=$(gh api repos/${{ github.repository }}/git/ref/tags/${VERSION} --jq .ref 2>/dev/null || echo "not_found")
+              if [ "$TAG_CHECK" = "not_found" ]; then
                 echo "❌ Error: The Git Tag '$VERSION' does not exist in the repository. Please push the Tag before deploying."
                 exit 1
               fi
@@ -67,14 +67,14 @@ jobs:
 
               # Define paths and environments based on Tag type (Release Candidate vs Stable)
               if [[ "$VERSION" =~ -rc ]]; then
-                TARGET_ENV="dev-uat"
+                TARGET_ENV="dev"
               else
                 TARGET_ENV="prod"
 
                 # Validate Release Candidate prerequisite for stable production releases
                 echo "🔍 Validating matching Release Candidate tag prerequisite..."
-                RC_TAGS=$(gh api repos/${{ github.repository }}/git/matching-refs/tags/${VERSION}-rc --silent || echo "[]")
-                if [ "$RC_TAGS" = "[]" ] || [ -z "$RC_TAGS" ]; then
+                RC_TAGS=$(gh api repos/${{ github.repository }}/git/matching-refs/tags/${VERSION}-rc --jq '.[].ref' 2>/dev/null || echo "")
+                if [ -z "$RC_TAGS" ]; then
                   echo "❌ Error: Production release of version '$VERSION' is blocked because no corresponding Release Candidate tag (e.g. ${VERSION}-rc.1) was found in Git history."
                   exit 1
                 fi
@@ -83,8 +83,8 @@ jobs:
 
               DEPLOY_PATH="builds/from-tags/$VERSION"
             else
-              # Manual branch deployment (creates sandbox preview under dev-uat bucket using commit SHA)
-              TARGET_ENV="dev-uat"
+              # Manual branch deployment (creates sandbox preview under dev bucket using commit SHA)
+              TARGET_ENV="dev"
               DEPLOY_PATH="builds/from-branches/$VERSION"
             fi
           else
@@ -119,10 +119,15 @@ jobs:
         run: |
           VERSION="${{ needs.setup.outputs.release_version }}"
           DEPLOY_PATH="${{ needs.setup.outputs.deploy_path }}"
+          TARGET_ENV="${{ needs.setup.outputs.target_env }}"
           if [ "$VERSION" = "v0.0.0-ci" ]; then
             npm run build
           else
-            npm run build -- --base-href=/$DEPLOY_PATH/
+            if [ "$TARGET_ENV" = "prod" ]; then
+              npm run build -- --configuration production --base-href=/$DEPLOY_PATH/
+            else
+              npm run build -- --configuration dev --base-href=/$DEPLOY_PATH/
+            fi
           fi
 
       - name: Upload Build Artifacts
@@ -167,7 +172,7 @@ jobs:
           else
             BUCKET_NAME="${{ secrets.AWS_S3_BUCKET_DEV }}"
           fi
-          aws s3 cp s3://$BUCKET_NAME/${{ needs.setup.outputs.deploy_path }}/index.html s3://$BUCKET_NAME/index.html --metadata-directive REPLACE --cache-control "public, max-age=0, s-maxage=86400, must-revalidate"
+          aws s3 cp s3://$BUCKET_NAME/${{ needs.setup.outputs.deploy_path }}/index.html s3://$BUCKET_NAME/index.html --metadata-directive REPLACE --cache-control "public, max-age=0, s-maxage=86400, must-revalidate" --content-type "text/html"
 
       - name: Invalidate CloudFront Cache
         run: |

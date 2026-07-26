@@ -1,16 +1,16 @@
-output "dev_uat_bucket_name" {
-  value       = module.dev_uat.bucket_name
-  description = "The name of the DEV/UAT S3 bucket"
+output "dev_bucket_name" {
+  value       = module.dev.bucket_name
+  description = "The name of the DEV S3 bucket"
 }
 
-output "dev_uat_cloudfront_domain" {
-  value       = module.dev_uat.cloudfront_domain_name
-  description = "The CloudFront domain name for DEV/UAT"
+output "dev_cloudfront_domain" {
+  value       = module.dev.cloudfront_domain_name
+  description = "The CloudFront domain name for DEV"
 }
 
-output "dev_uat_cloudfront_distribution_id" {
-  value       = module.dev_uat.cloudfront_distribution_id
-  description = "The CloudFront distribution ID for DEV/UAT"
+output "dev_cloudfront_distribution_id" {
+  value       = module.dev.cloudfront_distribution_id
+  description = "The CloudFront distribution ID for DEV"
 }
 
 output "prod_bucket_name" {
