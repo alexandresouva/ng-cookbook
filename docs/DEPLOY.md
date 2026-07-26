@@ -1,64 +1,64 @@
-# Onboarding: Fluxo de Release e Deploy de Produção (SemVer)
+# Onboarding: Release Flow & Production Deployment Guide
 
-Bem-vindo ao projeto! Este documento serve como guia prático e de bordo para novos engenheiros que precisam entender como funciona o ciclo de vida de Integração Contínua (CI) e Implantação Contínua (CD) do nosso aplicativo Angular, e como realizar novos deploys e rollbacks de forma segura na infraestrutura serverless da AWS.
-
----
-
-## 🚦 Visão Geral da Pipeline
-
-A nossa esteira de automação (GitHub Actions) é separada em etapas bem definidas para garantir a qualidade do código antes de qualquer deploy:
-
-1. **Validação Concorrente (CI):** Ao abrir um Pull Request (PR) ou commitar em branches de desenvolvimento, a pipeline executa o **Linter** (regras de formatação) e os **Testes Unitários** em paralelo.
-2. **Compilação Condicionada (Build):** O processo de build de produção do Angular só inicia se as etapas de linter e testes unitários passarem com sucesso.
-3. **Deploy Restrito (CD):** O deploy na nuvem da AWS é bloqueado para commits comuns de desenvolvimento. Ele está configurado de forma rígida para rodar **apenas** quando uma Tag Git que segue o padrão SemVer for criada e enviada para o repositório.
+This document serves as a practical guide for engineers to understand the Continuous Integration (CI) and Continuous Deployment (CD) lifecycle of the Angular application, including instructions for executing deployments and rollbacks on the AWS serverless infrastructure.
 
 ---
 
-## 🧪 Como Publicar em DEV/UAT (Ambiente de Testes)
+## 🚦 Pipeline Overview
 
-Para publicar suas alterações e disponibilizá-las para testes e homologação por parte da equipe (UAT/DEV):
+The automation pipeline (GitHub Actions) executes validation steps to ensure code quality prior to any deployment:
 
-1. Finalize e mescle seu Pull Request na branch de integração (`variation/standard-app`).
-2. Crie uma tag do Git utilizando o padrão SemVer com o sufixo `-rc.X` (Release Candidate):
+1. **Concurrent Validation (CI):** Upon opening a Pull Request (PR) or pushing commits to development branches, the pipeline runs **Code Linting** and **Unit Testing** concurrently in isolated runners.
+2. **Conditional Compilation (Build):** The production build step runs only if the linting and testing steps complete successfully.
+3. **Restricted Deployment (CD):** Deployment to AWS is blocked for standard development commits. The pipeline is configured to deploy **only** when a Git Tag matching the SemVer standard is created and pushed.
+
+---
+
+## 🧪 Deploying to DEV/UAT (Testing Environment)
+
+To publish modifications for testing and quality assurance (QA/UAT):
+
+1. Merge the Pull Request into the integration branch (`variation/standard-app`).
+2. Create and push a Git Tag using the SemVer standard with a `-rc.X` suffix (Release Candidate):
    ```bash
    git tag v1.0.0-rc.1
    git push origin v1.0.0-rc.1
    ```
-3. A pipeline irá disparar automaticamente. Ela irá compilar o Angular injetando o caminho `/builds/v1.0.0-rc.1/` nas referências e fará o upload dos arquivos para esta subpasta isolada no S3, atualizando o arquivo de entrada `index.html` na raiz do S3 para apontar para a nova versão.
+3. The pipeline triggers automatically, compiling the Angular application with the prefix `/builds/v1.0.0-rc.1/` and uploading the files to the versioned S3 subdirectory. The root `index.html` file is then updated to point to the new version.
 
 ---
 
-## 🚀 Como Publicar em PROD (Ambiente de Produção)
+## 🚀 Deploying to PROD (Production Environment)
 
-O deploy para produção segue regras estritas de governança para garantir que nenhuma versão vá ao ar sem ter sido homologada anteriormente em DEV/UAT.
+Deploying to production requires strict compliance checks to ensure that no code goes live without prior validation in DEV/UAT.
 
-### Regra de Ouro (Prerrequisito de RC):
+### Release Candidate Prerequisite Check:
 
-> ⚠️ **IMPORTANTE:** Para implantar uma versão estável em produção (ex: `v1.0.0`), é **obrigatório** que já tenha sido criada e enviada anteriormente a tag Release Candidate correspondente (ex: `v1.0.0-rc.1`). Se a pipeline não encontrar o histórico do RC no repositório, o deploy de produção será **abortado** com erro.
+> ⚠️ **IMPORTANT:** To deploy a stable release (e.g., `v1.0.0`), a corresponding Release Candidate tag (e.g., `v1.0.0-rc.1` or `v1.0.0-rc.2`) **must** already exist in the repository history. If no matching RC tag is found, the deployment job will **fail** immediately.
 
-### Passo a Passo:
+### Deployment Steps:
 
-1. Certifique-se de que a tag `v1.0.0-rc.*` foi testada e aprovada.
-2. Crie e envie a tag estável (sem sufixos):
+1. Ensure the Release Candidate tag (`v1.0.0-rc.*`) has been validated and approved.
+2. Create and push the stable tag (without suffixes):
    ```bash
    git tag v1.0.0
    git push origin v1.0.0
    ```
-3. A pipeline executará os testes de segurança, validará a presença da tag RC correspondente, compilará o Angular, fará o upload para `/builds/v1.0.0/` no S3 e atualizará o index na raiz do S3, invalidando o cache do CloudFront em seguida.
+3. The pipeline verifies the tag format, checks for the matching RC prerequisite, compiles the application, uploads it to `/builds/v1.0.0/` in the S3 bucket, updates the root `index.html` file, and invalidates the CloudFront cache.
 
 ---
 
-## 🔄 Como Fazer um Rollback Instantâneo (Recuperação de Erros)
+## 🔄 Instant Rollback (Emergency Recovery)
 
-Caso ocorra um problema crítico em produção após a publicação de uma versão e você precise retornar para a versão estável anterior imediatamente:
+If a critical issue occurs in production and the application must be rolled back to a previous stable state:
 
-Como mantemos o histórico de todas as builds organizadas por suas respectivas Tags dentro da pasta `/builds/` no S3, você não precisa compilar código ou rodar a pipeline inteira novamente.
+Because the pipeline preserves the complete history of all builds in versioned directories under `/builds/` in S3, a rollback does not require recompiling code or running a new pipeline.
 
-Para fazer o rollback, basta apontar o `index.html` da raiz de volta para a pasta da build anterior.
+To perform a rollback, the root `index.html` file in S3 must be updated to point back to the previous stable build directory.
 
-### Comando de Rollback (AWS CLI):
+### Rollback Commands (AWS CLI):
 
-Execute o comando abaixo substituindo `v1.0.0` pela versão estável anterior desejada:
+Execute the command below, replacing `v1.0.0` with the target stable version:
 
 ```bash
 aws s3 cp \
@@ -68,7 +68,7 @@ aws s3 cp \
   --cache-control "public, max-age=0, s-maxage=86400, must-revalidate"
 ```
 
-Em seguida, faça a invalidação do cache no CloudFront:
+Then, invalidate the CloudFront cache:
 
 ```bash
 aws cloudfront create-invalidation \
@@ -76,17 +76,17 @@ aws cloudfront create-invalidation \
   --paths "/index.html"
 ```
 
-O site voltará instantaneamente para a versão anterior para todos os usuários mundiais!
+The site reverts to the selected version instantly.
 
 ---
 
-## 🔘 Execução de Deploy Manual pelo Painel do GitHub
+## 🔘 Manual Deployments via GitHub UI
 
-Se você precisar refazer o deploy de uma tag específica manualmente:
+To manually re-trigger a deployment for an existing tag:
 
-1. Vá até a aba **Actions** do repositório no GitHub.
-2. No menu esquerdo, clique em **`CI/CD - Deploy SPA`**.
-3. Clique no botão **`Run workflow`** no lado direito.
-4. No campo **`release_version`**, digite o nome exato da tag Git que você deseja publicar (ex: `v1.0.0-rc.1`).
-5. Clique no botão verde de confirmação.
-6. _Nota:_ Se você digitar um nome de tag que não existe no repositório, ou selecionar uma branch em vez de uma tag, a pipeline abortará com erro para proteção.
+1. Navigate to the **Actions** tab of the repository on GitHub.
+2. Under the workflows list on the left, select **`CI/CD - Deploy SPA`**.
+3. Click the **`Run workflow`** button on the right.
+4. In the **`release_version`** input field, type the exact name of the Git Tag to publish (e.g., `v1.0.0-rc.1`).
+5. Click the green **`Run workflow`** button.
+6. _Note:_ If the specified tag does not exist in the repository, or if a branch is selected instead of a tag, the pipeline will fail.

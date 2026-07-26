@@ -122,7 +122,8 @@ graph TD
 - **Fase 6: CI/CD com Affected, Docker & Deploy AWS**
   - [ ] Docker Compose do workspace para desenvolvimento local.
   - [ ] CI/CD no GitHub Actions usando `nx affected` para processar apenas projetos modificados.
-  - [ ] Deploy na AWS de aplicações afetadas.
+  - [ ] Deploy na AWS de aplicações afetadas acionado estritamente por Tags SemVer (`v*`) com trava de Release Candidate (`-rc`).
+  - [ ] Configuração de infraestrutura Terraform segregando em múltiplos ambientes (`prod` e `dev-uat`) para as aplicações do monorepo.
 
 ---
 
@@ -137,5 +138,5 @@ graph TD
   - [ ] Módulo de Autenticação centralizado compartilhado entre MFEs.
 - **Fase 6: Docker Compose & Deploy MFE na AWS**
   - [ ] Docker Compose completo para rodar a malha de MFEs localmente.
-  - [ ] CI/CD com deploys independentes por MFE.
-  - [ ] Deploy na AWS com buckets S3 e distribuições CloudFront isolados por remote.
+  - [ ] CI/CD com deploys independentes por MFE acionados estritamente por Tags SemVer (`v*`) com trava de Release Candidate (`-rc`).
+  - [ ] Deploy na AWS com buckets S3 e distribuições CloudFront isolados por remote, segregando a infraestrutura em múltiplos ambientes (`prod` e `dev-uat`) via Terraform.
