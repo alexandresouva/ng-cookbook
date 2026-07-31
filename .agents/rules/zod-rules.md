@@ -7,15 +7,15 @@ Follow these guidelines when creating, modifying, or reviewing DTO validation an
 ## 🏗️ Folder and File Organization
 
 1. **DTOs (`.dto.ts`)**:
-   - Location: `src/app/features/<feature>/models/<entity>.dto.ts`
+   - Location: `src/app/features/<feature>/data-access/<entity>.dto.ts`
    - Purpose: Define the API response payload validation schema using Zod.
-   - Access: **Private to the feature's data-access layer**. Never export DTOs in `models/index.ts`.
+   - Access: **Private to the feature's data-access layer**. Never export DTOs in `data-access/index.ts`.
    - Naming: `[entity].dto.ts`
 
 2. **Domain Models (`.model.ts`)**:
-   - Location: `src/app/features/<feature>/models/<entity>.model.ts`
+   - Location: `src/app/features/<feature>/domain/<entity>.model.ts`
    - Purpose: Define clean TypeScript interfaces for the frontend application core, state, and UI.
-   - Access: Publicly exported in `models/index.ts`.
+   - Access: Publicly exported in `domain/index.ts`.
 
 3. **Mappers (`.mapper.ts`)**:
    - Location: `src/app/features/<feature>/data-access/<feature>.mapper.ts`
@@ -55,8 +55,8 @@ export type UserDto = z.infer<typeof userDtoSchema>;
 - You may write the mapper's `.transform()` schema privately inside the mapper class to combine validation and translation in a single execution pipeline.
 
 ```typescript
-import { userDtoSchema } from '../models/user.dto';
-import { User } from '../models/user.model';
+import { userDtoSchema } from './user.dto';
+import { User } from '../domain/user.model';
 
 export class UserMapper {
   private static readonly schema = userDtoSchema.transform((dto): User => ({

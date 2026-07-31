@@ -20,7 +20,8 @@ All features must follow a consistent, decoupled structure:
    - Coordinates API calls and applies pure domain rules.
    - _index.ts_: Exports ONLY the Facade.
 4. **`ui/`**:
-   - Presentation components ("dumb" components) with no framework injectables.
+   - Presentation/dumb components, directives, and pipes with no framework injectables or business logic dependencies.
+   - Organized in subfolders: `ui/components/`, `ui/directives/`, and `ui/pipes/`.
 5. **`pages/`**:
    - Smart components / route targets that inject only the Facade.
 
@@ -78,6 +79,7 @@ All features must follow a consistent, decoupled structure:
 - Dumb components (ui/): receive data via `input()`, emit via `output()` — never inject services
 - Use `input.required<T>()` for mandatory inputs
 - Use Angular control flow (`@if`, `@for`, `@switch`) — never `*ngIf` or `*ngFor`
+- All component templates and styles must be defined in external files (`.html` and `.scss`). Inline templates/styles in `@Component` are only permitted if they are 5 lines or less.
 
 ---
 

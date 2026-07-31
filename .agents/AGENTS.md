@@ -8,8 +8,6 @@ Before writing or modifying any code in this repository, locate and read the rel
    - Reference: [.agents/rules/antigravity-rtk-rules.md](file:///./.agents/rules/antigravity-rtk-rules.md)
    - **Mandatory Rule**: You **MUST** read this guide and prefix all shell commands with `rtk` (e.g. `rtk npm run lint`).
 
----
-
 2. **Angular Architecture & Folder Structure**:
    - Reference: [.agents/rules/architecture-rules.md](file:///./.agents/rules/architecture-rules.md)
    - Rules on feature folder structures, standalones, state (signals-only), imports, and boundaries rules.
@@ -21,3 +19,7 @@ Before writing or modifying any code in this repository, locate and read the rel
 4. **Unit Testing with Vitest (Mocks, Setups, Coverage)**:
    - Reference: [.agents/rules/testing-rules.md](file:///./.agents/rules/testing-rules.md)
    - Rules on unit testing guidelines, setup function patterns, centralized mock factories, and coverage policies.
+
+5. **Quality Assurance & DoD Enforcement**:
+   - Reference: [.agents/rules/qa-enforcement-rules.md](file:///./.agents/rules/qa-enforcement-rules.md)
+   - Rules on enforcing the Definition of Done (DoD), test helpers, accessibility checks, and direct I/O service consumption guidelines.

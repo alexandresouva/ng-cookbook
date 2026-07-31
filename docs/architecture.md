@@ -95,6 +95,19 @@ features/products/
 
 For extremely large modules, split the domain when a feature exceeds ~3 pages **or** has 2+ independent stores (e.g. splitting `products` into `catalog` and `detail`).
 
+To comply with the flat `src/app/features/*/` boundaries rule, sub-features must be elevated as separate folders under `features/` rather than nesting them:
+
+```text
+features/
+├── product-catalog/    # Sub-feature 1 (domain, data-access, application, ui, pages)
+└── product-admin/      # Sub-feature 2 (domain, data-access, application, ui, pages)
+```
+
+Cross-feature communication:
+
+- **No direct imports:** Features cannot import directly from each other (e.g., `product-admin` cannot import from `product-catalog`).
+- **Communication channel:** Share data and state via route/query parameters or globally registered services/events in `core/`.
+
 ---
 
 ## 📐 Naming Conventions
