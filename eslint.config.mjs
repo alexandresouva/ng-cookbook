@@ -215,16 +215,16 @@ export default defineConfig([
         },
         {
           type: 'feature-components',
-          pattern: 'src/app/features/*/components',
+          pattern: 'src/app/features/*/ui/components',
+          capture: ['featureName'],
+        },
+        {
+          type: 'feature-components',
+          pattern: 'src/app/features/*/ui/components/**',
           capture: ['featureName'],
         },
         // Fallback for root feature folder
         { type: 'feature', pattern: 'src/app/features/*', capture: ['featureName'] },
-      ],
-      'boundaries/entry-points': [
-        { type: 'feature-data-access', pattern: 'index.ts' },
-        { type: 'feature-application', pattern: 'index.ts' },
-        { type: 'feature-models', pattern: 'index.ts' },
       ],
       'boundaries/ignore': [
         'src/app/app.component.ts',
@@ -245,31 +245,24 @@ export default defineConfig([
       },
     },
     rules: {
-      'boundaries/entry-point': [
-        'error',
-        {
-          default: 'allow',
-          policies: [
-            {
-              target: { element: { type: 'feature-data-access' } },
-              allow: 'index.ts',
-            },
-            {
-              target: { element: { type: 'feature-application' } },
-              allow: 'index.ts',
-            },
-            {
-              target: { element: { type: 'feature-models' } },
-              allow: 'index.ts',
-            },
-          ],
-        },
-      ],
       'boundaries/dependencies': [
         'error',
         {
           default: 'disallow',
           policies: [
+            {
+              from: {
+                element: { type: 'feature-application' },
+                fileInternalPath: '**/*.store.ts',
+              },
+              disallow: [
+                {
+                  to: {
+                    element: { type: 'feature-data-access' },
+                  },
+                },
+              ],
+            },
             {
               from: { element: { type: 'core' } },
               allow: [{ to: { element: { type: 'shared' } } }],
@@ -298,6 +291,7 @@ export default defineConfig([
                       type: 'feature-application',
                       captured: { featureName: '{{from.captured.featureName}}' },
                     },
+                    fileInternalPath: 'index.ts',
                   },
                 },
                 {
@@ -306,6 +300,7 @@ export default defineConfig([
                       type: 'feature-data-access',
                       captured: { featureName: '{{from.captured.featureName}}' },
                     },
+                    fileInternalPath: 'index.ts',
                   },
                 },
                 {
@@ -322,6 +317,7 @@ export default defineConfig([
                       type: 'feature-models',
                       captured: { featureName: '{{from.captured.featureName}}' },
                     },
+                    fileInternalPath: 'index.ts',
                   },
                 },
               ],
@@ -337,6 +333,7 @@ export default defineConfig([
                       type: 'feature-models',
                       captured: { featureName: '{{from.captured.featureName}}' },
                     },
+                    fileInternalPath: 'index.ts',
                   },
                 },
                 {
@@ -361,6 +358,7 @@ export default defineConfig([
                       type: 'feature-models',
                       captured: { featureName: '{{from.captured.featureName}}' },
                     },
+                    fileInternalPath: 'index.ts',
                   },
                 },
                 {
@@ -385,6 +383,7 @@ export default defineConfig([
                       type: 'feature-models',
                       captured: { featureName: '{{from.captured.featureName}}' },
                     },
+                    fileInternalPath: 'index.ts',
                   },
                 },
                 {
@@ -401,6 +400,7 @@ export default defineConfig([
                       type: 'feature-data-access',
                       captured: { featureName: '{{from.captured.featureName}}' },
                     },
+                    fileInternalPath: 'index.ts',
                   },
                 },
               ],
@@ -443,6 +443,7 @@ export default defineConfig([
                       type: 'feature-data-access',
                       captured: { featureName: '{{from.captured.featureName}}' },
                     },
+                    fileInternalPath: 'index.ts',
                   },
                 },
                 {
@@ -459,6 +460,7 @@ export default defineConfig([
                       type: 'feature-application',
                       captured: { featureName: '{{from.captured.featureName}}' },
                     },
+                    fileInternalPath: 'index.ts',
                   },
                 },
                 {
@@ -467,6 +469,7 @@ export default defineConfig([
                       type: 'feature-models',
                       captured: { featureName: '{{from.captured.featureName}}' },
                     },
+                    fileInternalPath: 'index.ts',
                   },
                 },
               ],

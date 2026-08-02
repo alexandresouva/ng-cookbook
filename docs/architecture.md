@@ -77,6 +77,8 @@ features/products/
 │   ├── products.api.ts      # HTTP Client
 │   ├── product.dto.ts       # Private Zod DTO schema
 │   └── products.mapper.ts   # DTO -> Model Mapper
+│   # Note: Structuring starts flat. For complex features with multiple entities,
+│   # you may organize files into subfolders (e.g., api/, dto/, mappers/) for readability.
 ├── application/             # State & Orchestration Layer
 │   ├── products.store.ts    # Signal State
 │   ├── products.facade.ts   # Orchestrator / Use Cases Facade
@@ -112,17 +114,18 @@ Cross-feature communication:
 
 ## 📐 Naming Conventions
 
-| Suffix        | Purpose                                                         | Example                |
-| :------------ | :-------------------------------------------------------------- | :--------------------- |
-| `.api.ts`     | HTTP service — communicates with the API, returns domain models | `products.api.ts`      |
-| `.mapper.ts`  | Transforms DTO → domain model (Anti-Corruption Layer)           | `products.mapper.ts`   |
-| `.store.ts`   | Reactive state container (Angular Signals)                      | `products.store.ts`    |
-| `.service.ts` | Pure frontend domain logic (business rules, no HTTP, no DI)     | `products.service.ts`  |
-| `.facade.ts`  | Orchestrator — single entry point for pages                     | `products.facade.ts`   |
-| `.model.ts`   | Domain interface/type                                           | `product.model.ts`     |
-| `.dto.ts`     | API response shape (never leaves `data-access/`)                | `product.dto.ts`       |
-| `.routes.ts`  | Feature route declarations                                      | `products.routes.ts`   |
-| `.page.ts`    | Smart component / route target (inside `pages/`)                | `product-list.page.ts` |
+| Suffix              | Purpose                                                         | Example                   |
+| :------------------ | :-------------------------------------------------------------- | :------------------------ |
+| `.api.ts`           | HTTP service — communicates with the API, returns domain models | `products.api.ts`         |
+| `.mapper.ts`        | Transforms DTO → domain model (Anti-Corruption Layer)           | `products.mapper.ts`      |
+| `.store.ts`         | Pure reactive state container (NgRx SignalStore, no API/HTTP)   | `products.store.ts`       |
+| `*-form.service.ts` | Reactive form builder and validator service (in UI folder)      | `profile-form.service.ts` |
+| `.service.ts`       | Pure frontend domain logic (business rules, no HTTP, no DI)     | `products.service.ts`     |
+| `.facade.ts`        | Orchestrator — single entry point for pages, coordinates I/O    | `products.facade.ts`      |
+| `.model.ts`         | Domain interface/type                                           | `product.model.ts`        |
+| `.dto.ts`           | API response shape (never leaves `data-access/`)                | `product.dto.ts`          |
+| `.routes.ts`        | Feature route declarations                                      | `products.routes.ts`      |
+| `.page.ts`          | Smart component / route target (inside `pages/`)                | `product-list.page.ts`    |
 
 ---
 
@@ -130,10 +133,11 @@ Cross-feature communication:
 
 ### Facade Pattern
 
-Pages **only** inject the Facade from `application/`. They never inject the Store or Api directly.
+Smart components (pages) **only** inject the Facade from `application/`. They never inject the Store or API directly.
+The Facade coordinates async API requests, manages subscriptions, and updates the pure Store using state updaters. The Store contains only state and state-holding operations.
 
 ```
-Smart Component (Page) → Facade → Store (state) + Api (HTTP) + Domain (logic)
+Smart Component (Page) → Facade → Store (state only) + Api (HTTP) + Domain (logic)
 ```
 
 ### Anti-Corruption Layer (ACL)
@@ -149,14 +153,14 @@ API (ProductDTO) → .api.ts → .mapper.ts → Product (Domain) → rest of the
 
 ## 📏 Dependency Rules
 
-| Layer                    | Can import                                            | Cannot import            |
-| :----------------------- | :---------------------------------------------------- | :----------------------- |
-| `core/`                  | `shared/`                                             | `features/`              |
-| `shared/`                | Nothing internal                                      | `core/`, `features/`     |
-| `features/X/data-access` | `core/`, `shared/`, own `domain/`                     | `application/`, another  |
-| `features/X/application` | `core/`, `shared/`, own `domain/`, own `data-access/` | `pages/`, another        |
-| `features/X/pages`       | own `application` (Facade only), own `ui/`, `shared/` | `data-access/`, another  |
-| `features/X/components`  | `shared/`, own `domain/`                              | `data-access/`, `pages/` |
+| Layer                    | Can import                                                          | Cannot import                                       |
+| :----------------------- | :------------------------------------------------------------------ | :-------------------------------------------------- |
+| `core/`                  | `shared/`                                                           | `features/`                                         |
+| `shared/`                | Nothing internal                                                    | `core/`, `features/`                                |
+| `features/X/data-access` | `core/`, `shared/`, own `domain/`                                   | `application/`, another                             |
+| `features/X/application` | `core/`, `shared/`, own `domain/`, own `data-access/` (Facade only) | `pages/`, another (Store cannot import data-access) |
+| `features/X/pages`       | own `application` (Facade only), own `ui/`, `shared/`               | `data-access/`, another                             |
+| `features/X/components`  | `shared/`, own `domain/`                                            | `data-access/`, `pages/`                            |
 
 Enforced by `eslint-plugin-boundaries`. Violations cause `npm run lint` to fail.
 

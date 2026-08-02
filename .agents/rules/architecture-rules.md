@@ -15,6 +15,7 @@ All features must follow a consistent, decoupled structure:
 2. **`data-access/`**:
    - Strictly deals with network I/O and data transformations: API client (`.api.ts`), private validation schemas (`.dto.ts`), and translation (`.mapper.ts`).
    - Does not contain stores, state, or orchestrators.
+   - **File Organization**: The folder structure should start as **flat** (all files directly under `data-access/`). If the feature grows complex with multiple entities, you may organize them into subfolders (e.g., `api/`, `dto/`, `mappers/`) to improve readability.
 3. **`application/`**:
    - Framework orchestration and state management: Signal Store (`.store.ts`) and Facade (`.facade.ts`).
    - Coordinates API calls and applies pure domain rules.
@@ -85,11 +86,25 @@ All features must follow a consistent, decoupled structure:
 
 ## State Rules
 
-- State containers use Angular Signals only (no BehaviorSubject for state)
-- Private writable signals: `private readonly _state = signal<T>(initial)`
-- Public readonly signals: `readonly state = this._state.asReadonly()`
-- Derived state: `computed(() => ...)`
-- Store is provided at the page level (`providers: [FeatureStore]`)
+- State containers use NgRx SignalStore (`signalStore`).
+- **Store Purity:** Stores (`*.store.ts`) must remain pure containers of state. They must NEVER inject API services (`*.api.ts`), HTTP clients, or execute network requests.
+- **Facade Orchestration:** Facades (`*.facade.ts`) are responsible for coordinating async API calls, managing HTTP subscriptions, and updating the pure store using state updaters.
+- Store is provided at the page level (`providers: [FeatureStore]`).
+
+---
+
+## Clean Code & Form Guidelines
+
+- **Type Inference:** Avoid redundant type annotations when a type can be implicitly inferred (e.g. `readonly currentStep = this.store.currentStep` instead of `readonly currentStep: Signal<Step> = ...`).
+- **Form Services:** Complicated forms or form logic must be encapsulated inside a dedicated Form Service (e.g. `*form.service.ts`) inside the UI component folder. The UI component should only focus on rendering and UX.
+- **Unbound Validator Methods:** Avoid verbose type declarations inside form builder arrays (e.g. `(c: AbstractControl): ValidationErrors | null => ...`). Use simple lambda arrow functions like `c => Validators.required(c)` when necessary to avoid `@typescript-eslint/unbound-method` warnings.
+- **Clean Constructors:** Do not write logical procedures inside class constructors or lifecycles (like `effect` or `subscribe`). Extract them into private, descriptive methods (e.g., `this.setupProfileFormSync()`) and invoke them in the constructor.
+
+---
+
+## Domain & Schema Separation
+
+- **Domain contexts:** Models (`.model.ts`), DTOs (`.dto.ts`), and Mappers (`.mapper.ts`) must be separated by entity/context (e.g. `genre.dto.ts`, `artist.dto.ts`) instead of combining them into monolithic files. This preserves single responsibility and enables modular reuse.
 
 ---
 
